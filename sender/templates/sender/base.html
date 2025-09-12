@@ -1,4 +1,3 @@
-<!-- sender/templates/sender/base.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,23 +5,142 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Email Sender App</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Modern, polished styling with dark teal sidebar and muted teal body */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #E6F0FA; /* Muted teal background */
+            color: #2D3748; /* Dark gray for text */
+            margin: 0;
+            line-height: 1.6;
+        }
+        aside {
+            background-color: #1A3C34; /* Dark teal sidebar */
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        aside h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #E6F0FA;
+            letter-spacing: 0.05em;
+        }
+        aside a {
+            color: #E6F0FA;
+            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            display: block;
+            border-radius: 0.375rem;
+            transition: all 0.2s ease;
+        }
+        aside a:hover {
+            background-color: #25544A; /* Lighter dark teal on hover */
+            transform: translateX(5px);
+        }
+        main {
+            background-color: #E6F0FA;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1A3C34;
+            margin-bottom: 1.5rem;
+        }
+        button, .btn {
+            background-color: #1A3C34;
+            color: #E6F0FA;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover, .btn:hover {
+            background-color: #25544A;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        table {
+            background-color: #F7FAFC;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        th {
+            background-color: #D1E7F0;
+            color: #1A3C34;
+            font-weight: 600;
+            padding: 1rem;
+            text-align: left;
+        }
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid #E2E8F0;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        input, textarea {
+            border: 1px solid #D1E7F0;
+            border-radius: 0.375rem;
+            padding: 0.75rem;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #1A3C34;
+            box-shadow: 0 0 0 3px rgba(26, 60, 52, 0.2);
+        }
+        .pagination {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .pagination a, .pagination span {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            background-color: #F7FAFC;
+            color: #1A3C34;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .pagination a:hover {
+            background-color: #D1E7F0;
+        }
+        .card {
+            background-color: #F7FAFC;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 </head>
 <body class="flex">
-    <aside class="w-64 bg-gray-800 text-white h-screen fixed">
-        <div class="p-4">
-            <h1 class="text-xl font-bold">Dashboard</h1>
-            <ul class="mt-4">
-                <li><a href="{% url 'dashboard' %}" class="block py-2 hover:bg-gray-700">Home</a></li>
-                <li><a href="{% url 'upload_excel' %}" class="block py-2 hover:bg-gray-700">Upload Excel</a></li>
-                <li><a href="{% url 'email_list' %}" class="block py-2 hover:bg-gray-700">Email List</a></li>
-                <li><a href="{% url 'send_emails' %}" class="block py-2 hover:bg-gray-700">Send Emails</a></li>
-                <li><a href="{% url 'edit_template' %}" class="block py-2 hover:bg-gray-700">Edit Template</a></li>
+    <aside class="w-64 h-screen fixed">
+        <div class="p-6">
+            <h1 class="text-xl">Email Sender</h1>
+            <ul class="mt-6 space-y-2">
+                <li><a href="{% url 'dashboard' %}">Home</a></li>
+                <li><a href="{% url 'upload_excel' %}">Upload Excel</a></li>
+                <li><a href="{% url 'email_list' %}">Email List</a></li>
+                <li><a href="{% url 'send_emails' %}">Send Emails</a></li>
+                <li><a href="{% url 'edit_template' %}">Edit Template</a></li>
             </ul>
         </div>
     </aside>
-    <main class="ml-64 p-4 w-full">
-        {% block content %}
-        {% endblock %}
+    <main class="ml-64">
+        <div class="container">
+            {% block content %}
+            {% endblock %}
+        </div>
     </main>
 </body>
 </html>

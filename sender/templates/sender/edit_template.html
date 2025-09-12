@@ -1,12 +1,16 @@
-<!-- sender/templates/sender/edit_template.html -->
 {% extends 'sender/base.html' %}
 
 {% block content %}
-<h2 class="text-2xl">Edit Email Template</h2>
-<p>Use {{ username }} in the HTML to personalize.</p>
-<form method="post" class="mt-4">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="bg-blue-500 text-white px-4 py-2">Save</button>
-</form>
+<div class="card">
+    <h2>Edit Email Template</h2>
+    <p class="text-gray-600 mb-4">Use <code>{{ username }}</code> in the HTML to personalize the email.</p>
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+        <div>
+            {{ form.html_content.label_tag }}
+            {{ form.html_content }}
+        </div>
+        <button type="submit" class="btn">Save</button>
+    </form>
+</div>
 {% endblock %}

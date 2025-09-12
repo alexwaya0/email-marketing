@@ -1,41 +1,46 @@
-<!-- sender/templates/sender/email_list.html -->
 {% extends 'sender/base.html' %}
 
 {% block content %}
-<h2 class="text-2xl">Email List</h2>
-<form method="get" class="mt-4">
-    <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by username or email" class="border p-2">
-    <button type="submit" class="bg-blue-500 text-white px-4 py-2">Search</button>
-</form>
-<table class="mt-4 w-full border">
-    <thead>
-        <tr>
-            <th class="border p-2">Username</th>
-            <th class="border p-2">Email</th>
-            <th class="border p-2">Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for email in emails %}
-        <tr>
-            <td class="border p-2">{{ email.username }}</td>
-            <td class="border p-2">{{ email.email }}</td>
-            <td class="border p-2">
-                <a href="{% url 'delete_email' email.pk %}" class="text-red-500">Delete</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% if is_paginated %}
-<div class="mt-4">
-    {% if page_obj.has_previous %}
-    <a href="?page={{ page_obj.previous_page_number }}" class="px-2 py-1 bg-gray-200">Previous</a>
-    {% endif %}
-    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-    {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}" class="px-2 py-1 bg-gray-200">Next</a>
+<div class="card">
+    <h2>Email List</h2>
+    <form method="get" class="flex gap-2 mb-6">
+        <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by username or email" class="flex-grow">
+        <button type="submit" class="btn">Search</button>
+    </form>
+    <table class="w-full">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for email in emails %}
+            <tr>
+                <td>{{ email.username }}</td>
+                <td>{{ email.email }}</td>
+                <td>
+                    <a href="{% url 'delete_email' email.pk %}" class="text-red-500 hover:underline">Delete</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" class="text-center text-gray-500">No emails found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% if is_paginated %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+        {% endif %}
+        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}">Next</a>
+        {% endif %}
+    </div>
     {% endif %}
 </div>
-{% endif %}
 {% endblock %}

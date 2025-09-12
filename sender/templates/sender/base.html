@@ -15,6 +15,36 @@
             line-height: 1.6;
             overflow-x: hidden;
         }
+        .top-nav {
+            background-color: #1A3C34;
+            color: #E6F0FA;
+            width: calc(100vw - 256px);
+            margin-left: 256px;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .top-nav .datetime {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        .top-nav .icons {
+            display: flex;
+            gap: 1.5rem;
+        }
+        .top-nav .icons a {
+            color: #E6F0FA;
+            font-size: 1.25rem;
+            transition: all 0.3s ease;
+        }
+        .top-nav .icons a:hover {
+            color: #F59E0B;
+        }
         aside {
             background-color: #1A3C34;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
@@ -64,7 +94,7 @@
             min-height: 100vh;
             margin-left: 256px;
             width: calc(100vw - 256px);
-            padding: 0;
+            padding-top: 4.5rem; /* Adjust for top nav height */
         }
         .container {
             width: 100%;
@@ -171,6 +201,13 @@
     </style>
 </head>
 <body class="flex">
+    <div class="top-nav">
+        <div class="datetime" id="datetime"></div>
+        <div class="icons">
+            <a href="#" title="Settings"><i class="fas fa-cog"></i></a>
+            <a href="#" title="Notifications"><i class="fas fa-bell"></i></a>
+        </div>
+    </div>
     <aside class="w-64 h-screen fixed">
         <div class="p-6">
             <h1><a href="{% url 'dashboard' %}">OMLA</a></h1>
@@ -189,5 +226,25 @@
             {% endblock %}
         </div>
     </main>
+    <script>
+        function updateDateTime() {
+            const now = new Date();
+            const options = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true,
+                timeZone: 'Africa/Nairobi' // EAT timezone
+            };
+            const formattedDateTime = now.toLocaleString('en-US', options);
+            document.getElementById('datetime').textContent = formattedDateTime;
+        }
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+    </script>
 </body>
 </html>

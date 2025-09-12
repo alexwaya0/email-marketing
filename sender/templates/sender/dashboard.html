@@ -1,251 +1,43 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OMLA OS® - Email Sender App</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            background-color: #E6F0FA;
-            color: #2D3748;
-            margin: 0;
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
-        .top-nav {
-            background-color: #1A3C34;
-            color: #E6F0FA;
-            width: calc(100vw - 256px);
-            margin-left: 256px;
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: fixed;
-            top: 0;
-            z-index: 10;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .top-nav .datetime {
-            font-size: 1rem;
-            font-weight: 500;
-        }
-        .top-nav .icons {
-            display: flex;
-            gap: 1.5rem;
-        }
-        .top-nav .icons a {
-            color: #E6F0FA;
-            font-size: 1.25rem;
-            transition: all 0.3s ease;
-        }
-        .top-nav .icons a:hover {
-            color: #F59E0B;
-        }
-        aside {
-            background-color: #1A3C34;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease;
-            width: 256px;
-            position: fixed;
-            top: 0;
-            bottom: 0;
-        }
-        aside h1 a {
-            font-family: 'Segoe UI Variable', 'Segoe UI', 'Roboto', sans-serif;
-            font-size: 1.75rem;
-            font-weight: 600;
-            color: #E6F0FA;
-            letter-spacing: 0.15em;
-            text-decoration: none;
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
-            transition: all 0.3s ease;
-            background: linear-gradient(to right, transparent, transparent);
-        }
-        aside h1 a:hover {
-            background: linear-gradient(to right, #F59E0B, #D97706);
-            color: #FFFFFF;
-            transform: scale(1.05);
-        }
-        aside a {
-            color: #E6F0FA;
-            font-weight: 500;
-            padding: 0.75rem 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            border-radius: 0.375rem;
-            transition: all 0.2s ease;
-        }
-        aside a:hover, aside a.active {
-            background: linear-gradient(to right, #F59E0B, #D97706);
-            color: #FFFFFF;
-            transform: translateX(5px);
-        }
-        aside a i {
-            font-size: 1.2rem;
-        }
-        main {
-            background-color: #E6F0FA;
-            min-height: 100vh;
-            margin-left: 256px;
-            width: calc(100vw - 256px);
-            padding-top: 4.5rem;
-        }
-        .container {
-            width: 100%;
-            padding: 2rem;
-            box-sizing: border-box;
-        }
-        h2 {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #1A3C34;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        button, .btn {
-            background-color: #1A3C34;
-            color: #E6F0FA;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.375rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        button:hover, .btn:hover {
-            background-color: #25544A;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        table {
-            background-color: #F7FAFC;
-            border-radius: 0.5rem;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            table-layout: fixed;
-        }
-        th, td {
-            padding: 1rem;
-            border-bottom: 1px solid #E2E8F0;
-            text-align: left;
-        }
-        th {
-            background-color: #D1E7F0;
-            color: #1A3C34;
-            font-weight: 600;
-        }
-        tr:last-child td {
-            border-bottom: none;
-        }
-        input, textarea {
-            border: 1px solid #D1E7F0;
-            border-radius: 0.375rem;
-            padding: 0.75rem;
-            width: 100%;
-            transition: all 0.3s ease;
-            background-color: #F7FAFC;
-            box-sizing: border-box;
-        }
-        input:focus, textarea:focus {
-            outline: none;
-            border-color: #1A3C34;
-            box-shadow: 0 0 0 3px rgba(26, 60, 52, 0.2);
-        }
-        .pagination {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 1rem;
-            justify-content: center;
-        }
-        .pagination a, .pagination span {
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
-            background-color: #F7FAFC;
-            color: #1A3C34;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-        .pagination a:hover {
-            background-color: #D1E7F0;
-        }
-        .card {
-            background-color: #F7FAFC;
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            box-sizing: border-box;
-        }
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            width: 100%;
-        }
-        .form-group label {
-            font-weight: 500;
-            color: #1A3C34;
-        }
-    </style>
-</head>
-<body class="flex">
-    <div class="top-nav">
-        <div class="datetime" id="datetime"></div>
-        <div class="icons">
-            <a href="#" title="Settings"><i class="fas fa-cog"></i></a>
-            <a href="#" title="Notifications"><i class="fas fa-bell"></i></a>
+{% extends 'sender/base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="card">
+        <h2><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+        <p class="text-gray-600 text-sm">Manage your email campaigns with ease using OMLA OS<sup>®</sup>.</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="card">
+            <h3 class="text-base font-semibold text-[#1A3C34] mb-4"><i class="fas fa-chart-line mr-2"></i> Quick Stats</h3>
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600 text-sm">Total Emails</span>
+                    <span class="font-bold text-[#1A3C34] text-sm">{{ emails.count }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600 text-sm">Last Upload</span>
+                    <span class="font-bold text-[#1A3C34] text-sm">
+                        {% if last_upload %}
+                            {{ last_upload|date:"M d, Y" }}
+                        {% else %}
+                            None
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <h3 class="text-base font-semibold text-[#1A3C34] mb-4"><i class="fas fa-bolt mr-2"></i> Quick Actions</h3>
+            <div class="flex flex-col gap-4">
+                <a href="{% url 'upload_excel' %}" class="btn w-full text-left"><i class="fas fa-upload"></i> Upload New File</a>
+                <a href="{% url 'send_emails' %}" class="btn w-full text-left"><i class="fas fa-paper-plane"></i> Send Emails</a>
+                <a href="{% url 'edit_template' %}" class="btn w-full text-left"><i class="fas fa-edit"></i> Edit Email Template</a>
+            </div>
         </div>
     </div>
-    <aside class="w-64 h-screen fixed">
-        <div class="p-6">
-            <h1><a href="{% url 'dashboard' %}">OMLA OS<sup>®</sup></a></h1>
-            <ul class="mt-6 space-y-2">
-                <li><a href="{% url 'dashboard' %}" class="{% if request.path == '/' %}active{% endif %}"><i class="fas fa-home"></i> Home</a></li>
-                <li><a href="{% url 'upload_excel' %}" class="{% if 'upload' in request.path %}active{% endif %}"><i class="fas fa-upload"></i> Upload Excel</a></li>
-                <li><a href="{% url 'email_list' %}" class="{% if 'emails' in request.path %}active{% endif %}"><i class="fas fa-envelope"></i> Email List</a></li>
-                <li><a href="{% url 'send_emails' %}" class="{% if 'send' in request.path %}active{% endif %}"><i class="fas fa-paper-plane"></i> Send Emails</a></li>
-                <li><a href="{% url 'edit_template' %}" class="{% if 'template' in request.path %}active{% endif %}"><i class="fas fa-edit"></i> Edit Template</a></li>
-            </ul>
-        </div>
-    </aside>
-    <main class="ml-64">
-        <div class="container">
-            {% block content %}
-            {% endblock %}
-        </div>
-    </main>
-    <script>
-        function updateDateTime() {
-            const now = new Date();
-            const options = {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: true,
-                timeZone: 'Africa/Nairobi'
-            };
-            const formattedDateTime = now.toLocaleString('en-US', options);
-            document.getElementById('datetime').textContent = formattedDateTime;
-        }
-        updateDateTime();
-        setInterval(updateDateTime, 1000);
-    </script>
-</body>
-</html>
+    <div class="card">
+        <h3 class="text-base font-semibold text-[#1A3C34] mb-4"><i class="fas fa-info-circle mr-2"></i> About OMLA OS<sup>®</sup></h3>
+        <p class="text-gray-600 text-sm">OMLA OS<sup>®</sup> is your go-to solution for sending personalized email campaigns. Upload Excel files with usernames and emails, manage your recipient list, and craft custom HTML email templates with ease. Use the sidebar to navigate and start your campaign today.</p>
+    </div>
+</div>
+{% endblock %}

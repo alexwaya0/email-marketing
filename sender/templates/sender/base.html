@@ -3,12 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OMLA - Email Sender App</title>
+    <title>OMLA OS® - Email Sender App</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            font-weight: 400;
             background-color: #E6F0FA;
             color: #2D3748;
             margin: 0;
@@ -30,19 +33,101 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         .top-nav .datetime {
-            font-size: 1rem;
+            font-size: 0.875rem;
             font-weight: 500;
         }
         .top-nav .icons {
             display: flex;
             gap: 1.5rem;
+            align-items: center;
         }
         .top-nav .icons a {
             color: #E6F0FA;
-            font-size: 1.25rem;
+            font-size: 1.125rem;
             transition: all 0.3s ease;
+            position: relative;
         }
         .top-nav .icons a:hover {
+            color: #F59E0B;
+        }
+        .top-nav .icons a .tooltip {
+            visibility: hidden;
+            background-color: #1A3C34;
+            color: #E6F0FA;
+            text-align: center;
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            position: absolute;
+            z-index: 20;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            font-weight: 500;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            white-space: nowrap;
+        }
+        .top-nav .icons a:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 30;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #F7FAFC;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+        .modal-content h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1A3C34;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .modal-content ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .modal-content ul li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #E2E8F0;
+            font-size: 0.875rem;
+            color: #2D3748;
+        }
+        .modal-content ul li:last-child {
+            border-bottom: none;
+        }
+        .modal-content .close {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            color: #1A3C34;
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        .modal-content .close:hover {
             color: #F59E0B;
         }
         aside {
@@ -55,7 +140,8 @@
             bottom: 0;
         }
         aside h1 a {
-            font-size: 1.75rem;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.25rem;
             font-weight: 700;
             color: #E6F0FA;
             letter-spacing: 0.1em;
@@ -65,6 +151,7 @@
             border-radius: 0.375rem;
             transition: all 0.3s ease;
             background: linear-gradient(to right, transparent, transparent);
+            white-space: nowrap;
         }
         aside h1 a:hover {
             background: linear-gradient(to right, #F59E0B, #D97706);
@@ -74,6 +161,7 @@
         aside a {
             color: #E6F0FA;
             font-weight: 500;
+            font-size: 0.95rem;
             padding: 0.75rem 1.5rem;
             display: flex;
             align-items: center;
@@ -87,14 +175,14 @@
             transform: translateX(5px);
         }
         aside a i {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
         }
         main {
             background-color: #E6F0FA;
             min-height: 100vh;
             margin-left: 256px;
             width: calc(100vw - 256px);
-            padding-top: 4.5rem; /* Adjust for top nav height */
+            padding-top: 4.5rem;
         }
         .container {
             width: 100%;
@@ -102,20 +190,26 @@
             box-sizing: border-box;
         }
         h2 {
-            font-size: 2rem;
-            font-weight: 700;
+            font-size: 1.5rem;
+            font-weight: 600;
             color: #1A3C34;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.25rem;
             display: flex;
             align-items: center;
             gap: 0.75rem;
         }
+        h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1A3C34;
+        }
         button, .btn {
             background-color: #1A3C34;
             color: #E6F0FA;
-            padding: 0.75rem 1.5rem;
+            padding: 0.6rem 1.25rem;
             border-radius: 0.375rem;
             font-weight: 500;
+            font-size: 0.9rem;
             transition: all 0.3s ease;
             border: none;
             cursor: pointer;
@@ -137,9 +231,10 @@
             table-layout: fixed;
         }
         th, td {
-            padding: 1rem;
+            padding: 0.75rem;
             border-bottom: 1px solid #E2E8F0;
             text-align: left;
+            font-size: 0.875rem;
         }
         th {
             background-color: #D1E7F0;
@@ -152,11 +247,12 @@
         input, textarea {
             border: 1px solid #D1E7F0;
             border-radius: 0.375rem;
-            padding: 0.75rem;
+            padding: 0.6rem;
             width: 100%;
             transition: all 0.3s ease;
             background-color: #F7FAFC;
             box-sizing: border-box;
+            font-size: 0.875rem;
         }
         input:focus, textarea:focus {
             outline: none;
@@ -176,6 +272,7 @@
             color: #1A3C34;
             text-decoration: none;
             transition: all 0.3s ease;
+            font-size: 0.875rem;
         }
         .pagination a:hover {
             background-color: #D1E7F0;
@@ -183,7 +280,7 @@
         .card {
             background-color: #F7FAFC;
             border-radius: 0.5rem;
-            padding: 1.5rem;
+            padding: 1.25rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             width: 100%;
             box-sizing: border-box;
@@ -197,6 +294,7 @@
         .form-group label {
             font-weight: 500;
             color: #1A3C34;
+            font-size: 0.875rem;
         }
     </style>
 </head>
@@ -204,13 +302,33 @@
     <div class="top-nav">
         <div class="datetime" id="datetime"></div>
         <div class="icons">
-            <a href="#" title="Settings"><i class="fas fa-cog"></i></a>
-            <a href="#" title="Notifications"><i class="fas fa-bell"></i></a>
+            <a href="#" title="Settings" class="relative">
+                <i class="fas fa-cog"></i>
+                <span class="tooltip">Settings</span>
+            </a>
+            <a href="#" title="Notifications" id="notification-btn" class="relative">
+                <i class="fas fa-bell"></i>
+                <span class="tooltip">Notifications</span>
+            </a>
+            <a href="{% url 'logout' %}" title="Logout" class="relative">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="tooltip">Logout</span>
+            </a>
+        </div>
+    </div>
+    <div id="notification-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="close-modal">&times;</span>
+            <h3><i class="fas fa-bell"></i> Notifications</h3>
+            <ul>
+                <li>No new notifications available.</li>
+                <li>Check back later for updates.</li>
+            </ul>
         </div>
     </div>
     <aside class="w-64 h-screen fixed">
         <div class="p-6">
-            <h1><a href="{% url 'dashboard' %}">OMLA</a></h1>
+            <h1><a href="{% url 'dashboard' %}">OMLA OS<sup>®</sup></a></h1>
             <ul class="mt-6 space-y-2">
                 <li><a href="{% url 'dashboard' %}" class="{% if request.path == '/' %}active{% endif %}"><i class="fas fa-home"></i> Home</a></li>
                 <li><a href="{% url 'upload_excel' %}" class="{% if 'upload' in request.path %}active{% endif %}"><i class="fas fa-upload"></i> Upload Excel</a></li>
@@ -238,13 +356,29 @@
                 minute: '2-digit',
                 second: '2-digit',
                 hour12: true,
-                timeZone: 'Africa/Nairobi' // EAT timezone
+                timeZone: 'Africa/Nairobi'
             };
             const formattedDateTime = now.toLocaleString('en-US', options);
             document.getElementById('datetime').textContent = formattedDateTime;
         }
         updateDateTime();
         setInterval(updateDateTime, 1000);
+
+        const modal = document.getElementById('notification-modal');
+        const btn = document.getElementById('notification-btn');
+        const closeBtn = document.getElementById('close-modal');
+
+        btn.onclick = function() {
+            modal.style.display = 'flex';
+        }
+        closeBtn.onclick = function() {
+            modal.style.display = 'none';
+        }
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
     </script>
 </body>
 </html>

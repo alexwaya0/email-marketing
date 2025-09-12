@@ -1,0 +1,28 @@
+<!-- sender/templates/sender/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Sender App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex">
+    <aside class="w-64 bg-gray-800 text-white h-screen fixed">
+        <div class="p-4">
+            <h1 class="text-xl font-bold">Dashboard</h1>
+            <ul class="mt-4">
+                <li><a href="{% url 'dashboard' %}" class="block py-2 hover:bg-gray-700">Home</a></li>
+                <li><a href="{% url 'upload_excel' %}" class="block py-2 hover:bg-gray-700">Upload Excel</a></li>
+                <li><a href="{% url 'email_list' %}" class="block py-2 hover:bg-gray-700">Email List</a></li>
+                <li><a href="{% url 'send_emails' %}" class="block py-2 hover:bg-gray-700">Send Emails</a></li>
+                <li><a href="{% url 'edit_template' %}" class="block py-2 hover:bg-gray-700">Edit Template</a></li>
+            </ul>
+        </div>
+    </aside>
+    <main class="ml-64 p-4 w-full">
+        {% block content %}
+        {% endblock %}
+    </main>
+</body>
+</html>

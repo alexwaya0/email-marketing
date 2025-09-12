@@ -1,0 +1,11 @@
+<!-- sender/templates/sender/upload_excel.html -->
+{% extends 'sender/base.html' %}
+
+{% block content %}
+<h2 class="text-2xl">Upload Excel File</h2>
+<form method="post" enctype="multipart/form-data" class="mt-4">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="bg-blue-500 text-white px-4 py-2">Upload</button>
+</form>
+{% endblock %}

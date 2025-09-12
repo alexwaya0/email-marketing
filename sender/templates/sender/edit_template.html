@@ -2,15 +2,22 @@
 
 {% block content %}
 <div class="card">
-    <h2>Edit Email Template</h2>
-    <p class="text-gray-600 mb-4">Use <code>{{ username }}</code> in the HTML to personalize the email.</p>
-    <form method="post" class="space-y-4">
-        {% csrf_token %}
-        <div>
-            {{ form.html_content.label_tag }}
-            {{ form.html_content }}
-        </div>
-        <button type="submit" class="btn">Save</button>
-    </form>
+    <h2><i class="fas fa-edit"></i> Edit Email Template</h2>
+    <div class="w-full">
+        <p class="text-gray-600 mb-4">Use <code>{{ username }}</code> in the HTML to personalize the email content.</p>
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            <div class="form-group">
+                {{ form.html_content.label_tag }}
+                <div class="relative">
+                    <i class="fas fa-code absolute left-3 top-3 text-[#1A3C34]"></i>
+                    <textarea name="html_content" class="pl-10 w-full" rows="10" required>{{ form.html_content.value|default_if_none:'' }}</textarea>
+                </div>
+            </div>
+            <div>
+                <button type="submit" class="btn"><i class="fas fa-save"></i> Save Template</button>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}

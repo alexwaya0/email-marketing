@@ -1,4 +1,3 @@
-# sender/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView
 from django.db.models import Q
@@ -10,7 +9,9 @@ from .forms import UploadExcelForm, EmailTemplateForm
 import pandas as pd
 
 def dashboard(request):
-    return render(request, 'sender/dashboard.html')
+    emails = UserEmail.objects.all()
+    last_upload = UserEmail.objects.order_by('-id').first()
+    return render(request, 'sender/dashboard.html', {'emails': emails, 'last_upload': last_upload})
 
 def upload_excel(request):
     if request.method == 'POST':
@@ -18,11 +19,9 @@ def upload_excel(request):
         if form.is_valid():
             excel_file = request.FILES['excel_file']
             df = pd.read_excel(excel_file)
-            # Assume columns: 'username', 'email'
             for _, row in df.iterrows():
                 username = row['username']
                 email = row['email']
-                # Check for duplicates
                 if not UserEmail.objects.filter(email=email).exists():
                     UserEmail.objects.create(username=username, email=email)
             return redirect('email_list')
@@ -51,7 +50,7 @@ def delete_email(request, pk):
     return redirect('email_list')
 
 def send_emails(request):
-    template = EmailTemplate.objects.first()  # Assume one template for simplicity
+    template = EmailTemplate.objects.first()
     if not template:
         return redirect('edit_template')
 

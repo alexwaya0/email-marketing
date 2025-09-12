@@ -2,43 +2,48 @@
 
 {% block content %}
 <div class="card">
-    <h2>Email List</h2>
-    <form method="get" class="flex gap-2 mb-6">
-        <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by username or email" class="flex-grow">
-        <button type="submit" class="btn">Search</button>
+    <h2><i class="fas fa-envelope"></i> Email List</h2>
+    <form method="get" class="flex gap-2 mb-6 items-center">
+        <div class="relative flex-grow">
+            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1A3C34]"></i>
+            <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by username or email" class="pl-10 w-full">
+        </div>
+        <button type="submit" class="btn"><i class="fas fa-search"></i> Search</button>
     </form>
-    <table class="w-full">
-        <thead>
-            <tr>
-                <th>Username</th>
-                <th>Email</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for email in emails %}
-            <tr>
-                <td>{{ email.username }}</td>
-                <td>{{ email.email }}</td>
-                <td>
-                    <a href="{% url 'delete_email' email.pk %}" class="text-red-500 hover:underline">Delete</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="3" class="text-center text-gray-500">No emails found.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="overflow-x-auto">
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for email in emails %}
+                <tr>
+                    <td>{{ email.username }}</td>
+                    <td>{{ email.email }}</td>
+                    <td>
+                        <a href="{% url 'delete_email' email.pk %}" class="text-red-500 hover:underline"><i class="fas fa-trash-alt"></i> Delete</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="text-center text-gray-500 py-4"><i class="fas fa-inbox"></i> No emails found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% if is_paginated %}
     <div class="pagination">
         {% if page_obj.has_previous %}
-        <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+        <a href="?page={{ page_obj.previous_page_number }}"><i class="fas fa-chevron-left"></i> Previous</a>
         {% endif %}
         <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
         {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}">Next</a>
+        <a href="?page={{ page_obj.next_page_number }}">Next <i class="fas fa-chevron-right"></i></a>
         {% endif %}
     </div>
     {% endif %}

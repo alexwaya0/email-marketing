@@ -2,14 +2,22 @@
 
 {% block content %}
 <div class="card">
-    <h2>Upload Excel File</h2>
-    <form method="post" enctype="multipart/form-data" class="space-y-4">
-        {% csrf_token %}
-        <div>
-            {{ form.excel_file.label_tag }}
-            {{ form.excel_file }}
-        </div>
-        <button type="submit" class="btn">Upload</button>
-    </form>
+    <h2><i class="fas fa-upload"></i> Upload Excel File</h2>
+    <div class="w-full">
+        <p class="text-gray-600 mb-4">Upload an Excel file with 'username' and 'email' columns. Duplicate emails will be automatically filtered.</p>
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+            <div class="form-group">
+                {{ form.excel_file.label_tag }}
+                <div class="relative">
+                    <i class="fas fa-file-excel absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1A3C34]"></i>
+                    <input type="file" name="excel_file" class="pl-10 w-full" required>
+                </div>
+            </div>
+            <div>
+                <button type="submit" class="btn"><i class="fas fa-cloud-upload-alt"></i> Upload File</button>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}

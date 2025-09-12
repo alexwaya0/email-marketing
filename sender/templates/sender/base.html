@@ -3,54 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Sender App</title>
+    <title>OMLA - Email Sender App</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
     <style>
-        /* Modern, polished styling with dark teal sidebar and muted teal body */
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            background-color: #E6F0FA; /* Muted teal background */
-            color: #2D3748; /* Dark gray for text */
+            background-color: #E6F0FA;
+            color: #2D3748;
             margin: 0;
             line-height: 1.6;
+            overflow-x: hidden;
         }
         aside {
-            background-color: #1A3C34; /* Dark teal sidebar */
+            background-color: #1A3C34;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
             transition: all 0.3s ease;
+            width: 256px;
+            position: fixed;
+            top: 0;
+            bottom: 0;
         }
-        aside h1 {
-            font-size: 1.5rem;
-            font-weight: 600;
+        aside h1 a {
+            font-size: 1.75rem;
+            font-weight: 700;
             color: #E6F0FA;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.1em;
+            text-decoration: none;
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            transition: all 0.3s ease;
+            background: linear-gradient(to right, transparent, transparent);
+        }
+        aside h1 a:hover {
+            background: linear-gradient(to right, #F59E0B, #D97706);
+            color: #FFFFFF;
+            transform: scale(1.05);
         }
         aside a {
             color: #E6F0FA;
             font-weight: 500;
             padding: 0.75rem 1.5rem;
-            display: block;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
             border-radius: 0.375rem;
             transition: all 0.2s ease;
         }
-        aside a:hover {
-            background-color: #25544A; /* Lighter dark teal on hover */
+        aside a:hover, aside a.active {
+            background: linear-gradient(to right, #F59E0B, #D97706);
+            color: #FFFFFF;
             transform: translateX(5px);
+        }
+        aside a i {
+            font-size: 1.2rem;
         }
         main {
             background-color: #E6F0FA;
             min-height: 100vh;
-            padding: 2rem;
+            margin-left: 256px;
+            width: calc(100vw - 256px);
+            padding: 0;
         }
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
+            width: 100%;
+            padding: 2rem;
+            box-sizing: border-box;
         }
         h2 {
             font-size: 2rem;
             font-weight: 700;
             color: #1A3C34;
             margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
         }
         button, .btn {
             background-color: #1A3C34;
@@ -61,6 +89,9 @@
             transition: all 0.3s ease;
             border: none;
             cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
         }
         button:hover, .btn:hover {
             background-color: #25544A;
@@ -72,17 +103,18 @@
             border-radius: 0.5rem;
             overflow: hidden;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            table-layout: fixed;
+        }
+        th, td {
+            padding: 1rem;
+            border-bottom: 1px solid #E2E8F0;
+            text-align: left;
         }
         th {
             background-color: #D1E7F0;
             color: #1A3C34;
             font-weight: 600;
-            padding: 1rem;
-            text-align: left;
-        }
-        td {
-            padding: 1rem;
-            border-bottom: 1px solid #E2E8F0;
         }
         tr:last-child td {
             border-bottom: none;
@@ -93,6 +125,8 @@
             padding: 0.75rem;
             width: 100%;
             transition: all 0.3s ease;
+            background-color: #F7FAFC;
+            box-sizing: border-box;
         }
         input:focus, textarea:focus {
             outline: none;
@@ -103,6 +137,7 @@
             display: flex;
             gap: 0.5rem;
             margin-top: 1rem;
+            justify-content: center;
         }
         .pagination a, .pagination span {
             padding: 0.5rem 1rem;
@@ -120,19 +155,31 @@
             border-radius: 0.5rem;
             padding: 1.5rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 100%;
+        }
+        .form-group label {
+            font-weight: 500;
+            color: #1A3C34;
         }
     </style>
 </head>
 <body class="flex">
     <aside class="w-64 h-screen fixed">
         <div class="p-6">
-            <h1 class="text-xl">Email Sender</h1>
+            <h1><a href="{% url 'dashboard' %}">OMLA</a></h1>
             <ul class="mt-6 space-y-2">
-                <li><a href="{% url 'dashboard' %}">Home</a></li>
-                <li><a href="{% url 'upload_excel' %}">Upload Excel</a></li>
-                <li><a href="{% url 'email_list' %}">Email List</a></li>
-                <li><a href="{% url 'send_emails' %}">Send Emails</a></li>
-                <li><a href="{% url 'edit_template' %}">Edit Template</a></li>
+                <li><a href="{% url 'dashboard' %}" class="{% if request.path == '/' %}active{% endif %}"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="{% url 'upload_excel' %}" class="{% if 'upload' in request.path %}active{% endif %}"><i class="fas fa-upload"></i> Upload Excel</a></li>
+                <li><a href="{% url 'email_list' %}" class="{% if 'emails' in request.path %}active{% endif %}"><i class="fas fa-envelope"></i> Email List</a></li>
+                <li><a href="{% url 'send_emails' %}" class="{% if 'send' in request.path %}active{% endif %}"><i class="fas fa-paper-plane"></i> Send Emails</a></li>
+                <li><a href="{% url 'edit_template' %}" class="{% if 'template' in request.path %}active{% endif %}"><i class="fas fa-edit"></i> Edit Template</a></li>
             </ul>
         </div>
     </aside>

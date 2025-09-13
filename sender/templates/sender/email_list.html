@@ -19,7 +19,7 @@
             <a href="{% url 'send_emails' %}" class="btn bg-blue-600 hover:bg-blue-700 text-white"><i class="fas fa-paper-plane"></i> Send to All</a>
         </div>
     </div>
-    <form method="post" action="{% url 'send_selected' %}">
+    <form method="post" id="emailForm">
         {% csrf_token %}
         <div class="overflow-x-auto">
             <table>
@@ -27,8 +27,8 @@
                     <tr>
                         <th><input type="checkbox" id="selectAll"></th>
                         <th>#</th>
-                        <th class="cursor-pointer sortable">Username <i class="fas fa-sort ml-2"></i></th>
-                        <th class="cursor-pointer sortable">Email <i class="fas fa-sort ml-2"></i></th>
+                        <th class="cursor-pointer sortable" data-sort="username">Username <i class="fas fa-sort ml-2"></i></th>
+                        <th class="cursor-pointer sortable" data-sort="email">Email <i class="fas fa-sort ml-2"></i></th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -51,7 +51,10 @@
                 </tbody>
             </table>
         </div>
-        <button type="submit" class="btn bg-green-600 hover:bg-green-700 text-white mt-4"><i class="fas fa-paper-plane"></i> Send to Selected</button>
+        <div class="mt-4 flex gap-2">
+            <button type="button" id="sendSelectedBtn" class="btn bg-green-600 hover:bg-green-700 text-white"><i class="fas fa-paper-plane"></i> Send to Selected</button>
+            <button type="button" id="deleteSelectedBtn" class="btn bg-red-600 hover:bg-red-700 text-white"><i class="fas fa-trash-alt"></i> Delete Selected</button>
+        </div>
     </form>
 </div>
 
@@ -71,6 +74,8 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        let currentSort = { by: null, dir: 'asc' };
+
         // Function to update duplicates
         function updateDuplicates() {
             const emailRows = document.querySelectorAll('#emailTableBody tr:not([colspan])');
@@ -131,16 +136,52 @@
         });
 
         // Select all functionality
-        document.getElementById('selectAll').addEventListener('change', function() {
+        const selectAllCheckbox = document.getElementById('selectAll');
+        function attachSelectAll() {
+            selectAllCheckbox.removeEventListener('change', selectAllHandler); // Prevent duplicate listeners
+            selectAllCheckbox.addEventListener('change', selectAllHandler);
+        }
+        function selectAllHandler() {
             document.querySelectorAll('input[name="email_ids"]').forEach(cb => {
-                cb.checked = this.checked;
+                cb.checked = selectAllCheckbox.checked;
             });
+        }
+        attachSelectAll();
+
+        // Bulk actions
+        document.getElementById('sendSelectedBtn').addEventListener('click', function() {
+            const checkedBoxes = document.querySelectorAll('input[name="email_ids"]:checked');
+            if (checkedBoxes.length === 0) {
+                alert('No emails selected.');
+                return;
+            }
+            const form = document.getElementById('emailForm');
+            form.action = "{% url 'send_selected' %}";
+            form.submit();
         });
 
-        // Real-time search
+        document.getElementById('deleteSelectedBtn').addEventListener('click', function() {
+            const checkedBoxes = document.querySelectorAll('input[name="email_ids"]:checked');
+            if (checkedBoxes.length === 0) {
+                alert('No emails selected.');
+                return;
+            }
+            if (confirm('Are you sure you want to delete the selected emails? This action cannot be undone.')) {
+                const form = document.getElementById('emailForm');
+                form.action = "{% url 'bulk_delete' %}";
+                form.submit();
+            }
+        });
+
+        // Real-time search and sorting
         const searchInput = document.getElementById('searchInput');
-        searchInput.addEventListener('keyup', function() {
-            fetch(`/ajax_search/?q=${encodeURIComponent(this.value)}`)
+        function performSearch(query = '', sortBy = null, sortDir = 'asc') {
+            const params = new URLSearchParams();
+            if (query) params.append('q', query);
+            if (sortBy) params.append('sort_by', sortBy);
+            if (sortDir) params.append('sort_dir', sortDir);
+
+            fetch(`/ajax_search/?${params.toString()}`)
                 .then(response => response.json())
                 .then(data => {
                     const tbody = document.getElementById('emailTableBody');
@@ -159,7 +200,7 @@
                                 <td>${index + 1}</td>
                                 <td>${e.username}</td>
                                 <td>${e.email}</td>
-                                <td><a href="/emails/delete/${e.id}/" class="text-red-500 hover:underline"><i class="fas fa-trash-alt"></i> Delete</a></td>
+                                <td><a href="{% url 'delete_email' e.id %}" class="text-red-500 hover:underline"><i class="fas fa-trash-alt"></i> Delete</a></td>
                             `;
                             tbody.appendChild(tr);
                         });
@@ -167,62 +208,60 @@
                     document.getElementById('total').textContent = data.total;
                     document.getElementById('showing').textContent = data.emails.length;
                     updateDuplicates();
-                    // Re-attach select all listener (since table updated)
-                    document.getElementById('selectAll').addEventListener('change', function() {
-                        document.querySelectorAll('input[name="email_ids"]').forEach(cb => {
-                            cb.checked = this.checked;
-                        });
+                    attachSelectAll(); // Re-attach after update
+                    // Update sort indicators
+                    document.querySelectorAll('th.sortable').forEach(th => {
+                        th.classList.remove('asc', 'desc');
+                        th.querySelector('i').className = 'fas fa-sort ml-2';
                     });
+                    if (sortBy) {
+                        const activeTh = document.querySelector(`th[data-sort="${sortBy}"]`);
+                        if (activeTh) {
+                            activeTh.classList.add(sortDir);
+                            const icon = activeTh.querySelector('i');
+                            if (sortDir === 'asc') {
+                                icon.className = 'fas fa-sort-alpha-up ml-2';
+                            } else {
+                                icon.className = 'fas fa-sort-alpha-down ml-2';
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
                 });
+        }
+
+        searchInput.addEventListener('keyup', function() {
+            currentSort.by = null; // Reset sort on new search
+            performSearch(this.value, currentSort.by, currentSort.dir);
         });
 
-        // Sorting functionality
-        const getCellValue = (tr, idx) => tr.children[idx].innerText || tr.children[idx].textContent;
-
-        const compare = (idx, asc) => (a, b) => ((v1, v2) =>
-            v1 !== '' && v2 !== '' && !isNaN(v1) && !isNaN(v2) ? v1 - v2 : v1.toString().localeCompare(v2)
-        )(getCellValue(asc ? a : b, idx), getCellValue(asc ? b : a, idx));
-
+        // Sorting functionality (server-side)
         document.querySelectorAll('th.sortable').forEach(headerCell => {
             headerCell.addEventListener('click', () => {
-                const table = headerCell.closest('table');
-                const tbody = table.querySelector('tbody');
-                const rows = Array.from(tbody.querySelectorAll('tr:not([colspan])'));
-                const index = Array.from(headerCell.parentNode.children).indexOf(headerCell);
-
-                const isAsc = headerCell.classList.contains('asc');
-                const isDesc = headerCell.classList.contains('desc');
-
-                document.querySelectorAll('th.sortable').forEach(h => {
-                    if (h !== headerCell) {
-                        h.classList.remove('asc', 'desc');
-                        h.querySelector('i').className = 'fas fa-sort ml-2';
-                    }
-                });
-
-                let newIsAsc;
-                if (isAsc) {
-                    rows.sort(compare(index, false));
-                    headerCell.classList.remove('asc');
-                    headerCell.classList.add('desc');
-                    headerCell.querySelector('i').className = 'fas fa-sort-alpha-down ml-2';
-                    newIsAsc = false;
-                } else if (isDesc) {
-                    rows.sort(compare(index, true));
-                    headerCell.classList.remove('desc');
-                    headerCell.classList.add('asc');
-                    headerCell.querySelector('i').className = 'fas fa-sort-alpha-up ml-2';
-                    newIsAsc = true;
-                } else {
-                    rows.sort(compare(index, true));
-                    headerCell.classList.add('asc');
-                    headerCell.querySelector('i').className = 'fas fa-sort-alpha-up ml-2';
-                    newIsAsc = true;
+                const sortBy = headerCell.dataset.sort;
+                let newDir = 'asc';
+                if (currentSort.by === sortBy && currentSort.dir === 'asc') {
+                    newDir = 'desc';
                 }
-
-                rows.forEach(row => tbody.appendChild(row));
+                currentSort = { by: sortBy, dir: newDir };
+                performSearch(searchInput.value, sortBy, newDir);
             });
         });
+
+        // Initial load with possible sort
+        const urlParams = new URLSearchParams(window.location.search);
+        const initialQuery = urlParams.get('q') || '';
+        const initialSortBy = urlParams.get('sort_by') || null;
+        const initialSortDir = urlParams.get('sort_dir') || 'asc';
+        if (initialQuery || initialSortBy) {
+            performSearch(initialQuery, initialSortBy, initialSortDir);
+            searchInput.value = initialQuery;
+            if (initialSortBy) {
+                currentSort = { by: initialSortBy, dir: initialSortDir };
+            }
+        }
     });
 </script>
 {% endblock %}

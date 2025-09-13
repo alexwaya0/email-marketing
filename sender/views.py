@@ -69,6 +69,20 @@ def delete_email(request, pk):
     return redirect('email_list')
 
 
+def bulk_delete(request):
+    if request.method == 'POST':
+        email_ids = request.POST.getlist('email_ids')
+        if not email_ids:
+            messages.warning(request, "No emails selected.")
+            return redirect('email_list')
+
+        emails = UserEmail.objects.filter(id__in=email_ids)
+        count = emails.count()
+        emails.delete()
+        messages.success(request, f"{count} emails deleted successfully.")
+    return redirect('email_list')
+
+
 def add_email(request):
     if request.method == 'POST':
         form = AddEmailForm(request.POST)
@@ -115,7 +129,7 @@ def send_emails(request):
         msg.attach_alternative(html_content, "text/html")
         msg.send()  # with console backend → prints in terminal
 
-    # If there’s another page, redirect to it
+    # If there's another page, redirect to it
     if page_obj.has_next():
         next_url = f"{request.path}?page={page_obj.next_page_number()}"
         messages.info(request, f"Batch {page_number} processed. Continuing to next batch...")
@@ -175,9 +189,11 @@ def edit_template(request):
 
 def ajax_search(request):
     query = request.GET.get('q', '')
+    sort_by = request.GET.get('sort_by', 'id')
+    sort_dir = request.GET.get('sort_dir', 'asc')
     emails = UserEmail.objects.filter(
         Q(username__icontains=query) | Q(email__icontains=query)
-    )
+    ).order_by(f'{"-" if sort_dir == "desc" else ""}{sort_by}')
     data = [
         {
             'id': e.id,

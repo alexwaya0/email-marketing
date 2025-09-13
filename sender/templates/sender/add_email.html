@@ -3,10 +3,17 @@
 {% block content %}
 <div class="card">
     <h2>Add New Email</h2>
-    <form method="post">
+    <form method="post" class="flex flex-col gap-4">
         {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn">Add Email</button>
+        <div class="flex flex-col">
+            <label for="{{ form.username.id_for_label }}" class="mb-1 font-medium">Username:</label>
+            {{ form.username }}
+        </div>
+        <div class="flex flex-col">
+            <label for="{{ form.email.id_for_label }}" class="mb-1 font-medium">Email:</label>
+            {{ form.email }}
+        </div>
+        <button type="submit" class="btn self-start">Add Email</button>
     </form>
 </div>
 {% endblock %}

@@ -73,13 +73,18 @@ def bulk_delete(request):
     if request.method == 'POST':
         email_ids = request.POST.getlist('email_ids')
         if not email_ids:
-            messages.warning(request, "No emails selected.")
+            messages.warning(request, "No emails selected for deletion.")
             return redirect('email_list')
-
-        emails = UserEmail.objects.filter(id__in=email_ids)
-        count = emails.count()
-        emails.delete()
-        messages.success(request, f"{count} emails deleted successfully.")
+        try:
+            emails = UserEmail.objects.filter(id__in=email_ids)
+            count = emails.count()
+            if count == 0:
+                messages.warning(request, "No valid emails selected for deletion.")
+            else:
+                emails.delete()
+                messages.success(request, f"Successfully deleted {count} email(s).")
+        except Exception as e:
+            messages.error(request, f"Error deleting emails: {str(e)}")
     return redirect('email_list')
 
 

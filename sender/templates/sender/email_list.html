@@ -12,6 +12,7 @@
         </div>
         <div class="flex items-center gap-4 mt-4 md:mt-0">
             <select id="pageSizeSelect" class="border rounded px-2 py-1">
+                <option value="5" {% if page_size == '5' %}selected{% endif %}>5</option>
                 <option value="10" {% if page_size == '10' %}selected{% endif %}>10</option>
                 <option value="25" {% if page_size == '25' %}selected{% endif %}>25</option>
                 <option value="50" {% if page_size == '50' %}selected{% endif %}>50</option>
@@ -28,24 +29,24 @@
     <form method="post" id="emailForm">
         {% csrf_token %}
         <div class="overflow-x-auto">
-            <table>
+            <table class="w-full">
                 <thead>
                     <tr>
-                        <th><input type="checkbox" id="selectAll"></th>
-                        <th>#</th>
-                        <th class="cursor-pointer sortable" data-sort="username">Username <i class="fas fa-sort ml-2"></i></th>
-                        <th class="cursor-pointer sortable" data-sort="email">Email <i class="fas fa-sort ml-2"></i></th>
-                        <th>Actions</th>
+                        <th class="w-12 text-center"><input type="checkbox" id="selectAll"></th>
+                        <th class="w-16 text-center">#</th>
+                        <th class="w-1/3 cursor-pointer sortable" data-sort="username">Username <i class="fas fa-sort ml-2"></i></th>
+                        <th class="w-1/3 cursor-pointer sortable" data-sort="email">Email <i class="fas fa-sort ml-2"></i></th>
+                        <th class="w-1/6 text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="emailTableBody">
                     {% for email in emails %}
                     <tr data-username="{{ email.username }}" data-email="{{ email.email }}">
-                        <td><input type="checkbox" name="email_ids" value="{{ email.id }}"></td>
-                        <td>{{ forloop.counter }}</td>
-                        <td>{{ email.username }}</td>
-                        <td>{{ email.email }}</td>
-                        <td>
+                        <td class="w-12 text-center"><input type="checkbox" name="email_ids" value="{{ email.id }}"></td>
+                        <td class="w-16 text-center">{{ forloop.counter }}</td>
+                        <td class="w-1/3">{{ email.username }}</td>
+                        <td class="w-1/3">{{ email.email }}</td>
+                        <td class="w-1/6 text-center">
                             <a href="{% url 'delete_email' email.pk %}" class="text-red-500 hover:underline"><i class="fas fa-trash-alt"></i> Delete</a>
                         </td>
                     </tr>
@@ -217,11 +218,11 @@
                             tr.dataset.username = e.username;
                             tr.dataset.email = e.email;
                             tr.innerHTML = `
-                                <td><input type="checkbox" name="email_ids" value="${e.id}"></td>
-                                <td>${index + 1 + ((data.page - 1) * (pageSize === 'all' ? 0 : parseInt(pageSize)))}</td>
-                                <td>${e.username}</td>
-                                <td>${e.email}</td>
-                                <td><a href="/emails/delete/${e.id}/" class="text-red-500 hover:underline"><i class="fas fa-trash-alt"></i> Delete</a></td>
+                                <td class="w-12 text-center"><input type="checkbox" name="email_ids" value="${e.id}"></td>
+                                <td class="w-16 text-center">${index + 1 + ((data.page - 1) * (pageSize === 'all' ? 0 : parseInt(pageSize)))}</td>
+                                <td class="w-1/3">${e.username}</td>
+                                <td class="w-1/3">${e.email}</td>
+                                <td class="w-1/6 text-center"><a href="/emails/delete/${e.id}/" class="text-red-500 hover:underline"><i class="fas fa-trash-alt"></i> Delete</a></td>
                             `;
                             tbody.appendChild(tr);
                         });
@@ -232,7 +233,7 @@
                     attachSelectAll(); // Re-attach after update
 
                     // Update pagination controls
-                    const paginationDiv = document.querySelector('.pagination');
+                    let paginationDiv = document.querySelector('.pagination');
                     if (pageSize === 'all' || data.num_pages <= 1) {
                         if (paginationDiv) paginationDiv.style.display = 'none';
                     } else {

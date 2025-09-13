@@ -1,27 +1,36 @@
 {% extends 'sender/base.html' %}
+{% load static %}
 
 {% block content %}
 <div class="card">
     <h2><i class="fas fa-envelope"></i> Email List</h2>
-    <form method="get" class="flex gap-2 mb-6 items-center">
-        <div class="relative flex-grow">
-            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1A3C34]"></i>
-            <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by username or email" class="pl-10 w-full">
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+        <form method="get" class="flex gap-2 items-center flex-grow">
+            <div class="relative flex-grow">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1A3C34]"></i>
+                <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by username or email" class="pl-10 w-full">
+            </div>
+            <button type="submit" class="btn"><i class="fas fa-search"></i> Search</button>
+        </form>
+
+        <div class="flex items-center gap-4 mt-4 md:mt-0">
+            <button id="showDuplicatesBtn" class="btn bg-red-600 hover:bg-red-700 text-white flex items-center gap-2">
+                <i class="fas fa-exclamation-triangle"></i> Find Duplicates (<span id="duplicateCount">0</span>)
+            </button>
         </div>
-        <button type="submit" class="btn"><i class="fas fa-search"></i> Search</button>
-    </form>
+    </div>
     <div class="overflow-x-auto">
         <table>
             <thead>
                 <tr>
-                    <th>Username</th>
-                    <th>Email</th>
+                    <th class="cursor-pointer sortable" data-sort="username">Username <i class="fas fa-sort ml-2"></i></th>
+                    <th class="cursor-pointer sortable" data-sort="email">Email <i class="fas fa-sort ml-2"></i></th>
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="emailTableBody">
                 {% for email in emails %}
-                <tr>
+                <tr data-username="{{ email.username }}" data-email="{{ email.email }}">
                     <td>{{ email.username }}</td>
                     <td>{{ email.email }}</td>
                     <td>
@@ -39,13 +48,141 @@
     {% if is_paginated %}
     <div class="pagination">
         {% if page_obj.has_previous %}
-        <a href="?page={{ page_obj.previous_page_number }}"><i class="fas fa-chevron-left"></i> Previous</a>
+        <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="btn-paginate"><i class="fas fa-chevron-left"></i> Previous</a>
         {% endif %}
         <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
         {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}">Next <i class="fas fa-chevron-right"></i></a>
+        <a href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="btn-paginate">Next <i class="fas fa-chevron-right"></i></a>
         {% endif %}
     </div>
     {% endif %}
 </div>
+
+<div id="duplicateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center pb-3">
+            <h3 class="text-lg font-bold">Duplicate Emails</h3>
+            <button id="closeModalBtn" class="text-red-500 hover:text-red-700 text-xl font-bold">&times;</button>
+        </div>
+        <div class="mt-2 text-gray-600">
+            <p>Found <span id="modalDuplicateCount">0</span> duplicate emails.</p>
+            <div id="duplicateList" class="mt-4 max-h-64 overflow-y-auto">
+                </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const emailRows = document.querySelectorAll('#emailTableBody tr:not([colspan])');
+        const emailList = [];
+
+        // Populate emailList with email addresses from the table
+        emailRows.forEach(row => {
+            const email = row.dataset.email.trim().toLowerCase();
+            emailList.push(email);
+        });
+
+        // Find duplicates
+        const seenEmails = new Set();
+        const duplicates = new Set();
+        emailList.forEach(email => {
+            if (seenEmails.has(email)) {
+                duplicates.add(email);
+            }
+            seenEmails.add(email);
+        });
+
+        // Update the duplicate count
+        const duplicateCountElement = document.getElementById('duplicateCount');
+        const modalDuplicateCountElement = document.getElementById('modalDuplicateCount');
+        duplicateCountElement.textContent = duplicates.size;
+        modalDuplicateCountElement.textContent = duplicates.size;
+
+        // Populate the modal list
+        const duplicateListContainer = document.getElementById('duplicateList');
+        if (duplicates.size > 0) {
+            duplicates.forEach(email => {
+                const p = document.createElement('p');
+                p.textContent = email;
+                p.className = 'bg-gray-100 p-2 mb-2 rounded-md font-mono';
+                duplicateListContainer.appendChild(p);
+            });
+        } else {
+            duplicateListContainer.innerHTML = '<p class="text-gray-500">No duplicate emails found. 🎉</p>';
+        }
+
+        // Modal functionality
+        const duplicateModal = document.getElementById('duplicateModal');
+        const showDuplicatesBtn = document.getElementById('showDuplicatesBtn');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+
+        showDuplicatesBtn.addEventListener('click', () => {
+            duplicateModal.classList.remove('hidden');
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            duplicateModal.classList.add('hidden');
+        });
+
+        // Close modal when clicking outside of it
+        window.addEventListener('click', (event) => {
+            if (event.target === duplicateModal) {
+                duplicateModal.classList.add('hidden');
+            }
+        });
+
+        // Sorting functionality
+        const getCellValue = (tr, idx) => tr.children[idx].innerText || tr.children[idx].textContent;
+
+        const compare = (idx, asc) => (a, b) => ((v1, v2) =>
+            v1 !== '' && v2 !== '' && !isNaN(v1) && !isNaN(v2) ? v1 - v2 : v1.toString().localeCompare(v2)
+        )(getCellValue(asc ? a : b, idx), getCellValue(asc ? b : a, idx));
+
+        document.querySelectorAll('th.sortable').forEach(headerCell => {
+            headerCell.addEventListener('click', () => {
+                const table = headerCell.closest('table');
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr:not([colspan])'));
+                const index = Array.from(headerCell.parentNode.children).indexOf(headerCell);
+
+                // Check for current sort direction on the header
+                const isAsc = headerCell.classList.contains('asc');
+                const isDesc = headerCell.classList.contains('desc');
+
+                // Reset all other headers
+                document.querySelectorAll('th.sortable').forEach(h => {
+                    if (h !== headerCell) {
+                        h.classList.remove('asc', 'desc');
+                        h.querySelector('i').className = 'fas fa-sort ml-2';
+                    }
+                });
+
+                // Sort based on the current state
+                let newIsAsc;
+                if (isAsc) {
+                    rows.sort(compare(index, false));
+                    headerCell.classList.remove('asc');
+                    headerCell.classList.add('desc');
+                    headerCell.querySelector('i').className = 'fas fa-sort-alpha-down ml-2';
+                    newIsAsc = false;
+                } else if (isDesc) {
+                    rows.sort(compare(index, true));
+                    headerCell.classList.remove('desc');
+                    headerCell.classList.add('asc');
+                    headerCell.querySelector('i').className = 'fas fa-sort-alpha-up ml-2';
+                    newIsAsc = true;
+                } else { // First click
+                    rows.sort(compare(index, true));
+                    headerCell.classList.add('asc');
+                    headerCell.querySelector('i').className = 'fas fa-sort-alpha-up ml-2';
+                    newIsAsc = true;
+                }
+
+                rows.forEach(row => tbody.appendChild(row));
+            });
+        });
+
+    });
+</script>
 {% endblock %}

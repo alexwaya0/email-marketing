@@ -1,23 +1,77 @@
-{% extends 'sender/base.html' %}
 
+{% extends 'sender/base.html' %}
+{% load static %}
 {% block content %}
-<div class="card">
-    <h2><i class="fas fa-edit"></i> Edit Email Template</h2>
+<div class="card" style="background: linear-gradient(to bottom, #F7FAFC, #E2E8F0), url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCI+PHBhdGggZmlsbD0iIzE2NDIzNCIgZmlsbC1vcGFjaXR5PSIwLjEiIGQ9Ik0wIDBoMTAwdjEwMEgweiIvPjxwYXRoIGZpbGw9IiMxNjQyMzQiIGZpbGwtb3BhY2l0eT0iMC4xNSIgZD0iTTAgNTBoMTAwdjE4SDB6TTAgODJoMTAwdjE4SDB6TTUwIDBoMTh2MTAwSDUwem0zMiAxOGgxOHY2NEg4MnptMCA4M2gxOHY2NEg4MnptLTY0IDBoMTh2NjRIMTh6bTAgODNoMTh2NjRIMTh6Ii8+PC9zdmc+') repeat; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 10px rgba(245, 158, 11, 0.4); border: 1px solid #F59E0B;">
+    <h2><i class="fas fa-code"></i> Edit Email Template</h2>
     <div class="w-full">
-        <p class="text-gray-600 text-sm mb-4">Use <code>{{ username }}</code> in the HTML to personalize the email content.</p>
+        <p class="text-gray-600 text-sm mb-4">Use <code class="font-mono bg-[#1A3C34] text-[#E6F0FA] px-1 rounded">{{ username }}</code> in the HTML to personalize the email content.</p>
         <form method="post" class="space-y-6">
             {% csrf_token %}
             <div class="form-group">
                 {{ form.html_content.label_tag }}
                 <div class="relative">
-                    <i class="fas fa-code absolute left-3 top-3 text-[#1A3C34]"></i>
-                    <textarea name="html_content" class="pl-10 w-full" rows="10" required>{{ form.html_content.value|default_if_none:'' }}</textarea>
+                    <i class="fas fa-code absolute left-3 top-3 text-[#F59E0B]"></i>
+                    <textarea name="html_content" class="pl-10 w-full font-mono text-sm" rows="12" required style="font-family: 'JetBrains Mono', monospace; background: linear-gradient(to bottom, #1A3C34, #0F2A24); color: #E6F0FA; border-color: #F59E0B; border-radius: 0.375rem; transition: box-shadow 0.3s ease, transform 0.3s ease;" onfocus="this.style.boxShadow='0 0 10px rgba(245, 158, 11, 0.6), 0 0 15px rgba(245, 158, 11, 0.4); this.style.transform='scale(1.01)'" onblur="this.style.boxShadow='none'; this.style.transform='scale(1)'">{{ form.html_content.value|default_if_none:'' }}</textarea>
                 </div>
             </div>
-            <div>
-                <button type="submit" class="btn"><i class="fas fa-save"></i> Save Template</button>
+            <div class="flex gap-4">
+                <button type="submit" class="btn" style="background: linear-gradient(to right, #1A3C34, #0F2A24); box-shadow: 0 0 8px rgba(245, 158, 11, 0.4); transition: box-shadow 0.3s ease, transform 0.3s ease;" onmouseover="this.style.boxShadow='0 0 12px rgba(245, 158, 11, 0.6), 0 0 18px rgba(245, 158, 11, 0.4); this.style.transform='scale(1.05)'" onmouseout="this.style.boxShadow='0 0 8px rgba(245, 158, 11, 0.4)'; this.style.transform='scale(1)'"><i class="fas fa-save"></i> Save Template</button>
+                <button type="button" id="preview-btn" class="btn" style="background: linear-gradient(to right, #F59E0B, #D97706); box-shadow: 0 0 8px rgba(245, 158, 11, 0.4); transition: box-shadow 0.3s ease, transform 0.3s ease;" onmouseover="this.style.boxShadow='0 0 12px rgba(245, 158, 11, 0.6), 0 0 18px rgba(245, 158, 11, 0.4); this.style.transform='scale(1.05)'" onmouseout="this.style.boxShadow='0 0 8px rgba(245, 158, 11, 0.4)'; this.style.transform='scale(1)'"><i class="fas fa-eye"></i> Preview Template</button>
             </div>
         </form>
     </div>
 </div>
+<div id="preview-modal" class="preview-modal">
+    <div class="preview-modal-content">
+        <span class="close" id="close-preview">&times;</span>
+        <h3><i class="fas fa-eye"></i> Email Template Preview</h3>
+        <iframe id="preview-iframe"></iframe>
+    </div>
+</div>
+<script>
+    const previewModal = document.getElementById('preview-modal');
+    const previewBtn = document.getElementById('preview-btn');
+    const closePreview = document.getElementById('close-preview');
+    const textarea = document.querySelector('textarea[name="html_content"]');
+    const iframe = document.getElementById('preview-iframe');
+
+    previewBtn.onclick = function() {
+        let htmlContent = textarea.value.trim();
+        if (!htmlContent) {
+            alert('Please enter some HTML content to preview.');
+            return;
+        }
+        // Replace {{ username }} with sample data (handle variations)
+        htmlContent = htmlContent.replace(/\{\{\s*username\s*\}\}/g, 'John Doe');
+        // Wrap in full HTML document if not present
+        if (!htmlContent.toLowerCase().includes('<html')) {
+            htmlContent = '<!DOCTYPE html><html><head><title>Preview</title></head><body>' + htmlContent + '</body></html>';
+        }
+        try {
+            const doc = iframe.contentWindow || iframe.contentDocument;
+            if (doc.document) {
+                doc = doc.document;
+            }
+            doc.open();
+            doc.write(htmlContent);
+            doc.close();
+            previewModal.style.display = 'flex';
+        } catch (error) {
+            console.error('Preview error:', error);
+            iframe.contentDocument.open();
+            iframe.contentDocument.write('<html><body><p style="color: red;">Preview failed. Check console for errors. Raw content: ' + htmlContent.substring(0, 200) + '...</p></body></html>');
+            iframe.contentDocument.close();
+            previewModal.style.display = 'flex';
+        }
+    }
+    closePreview.onclick = function() {
+        previewModal.style.display = 'none';
+    }
+    window.onclick = function(event) {
+        if (event.target == previewModal) {
+            previewModal.style.display = 'none';
+        }
+    }
+</script>
 {% endblock %}

@@ -10,8 +10,14 @@
             <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1A3C34]"></i>
             <input type="text" id="searchInput" placeholder="Search by username or email" class="pl-10 w-full">
         </div>
-
         <div class="flex items-center gap-4 mt-4 md:mt-0">
+            <select id="pageSizeSelect" class="border rounded px-2 py-1">
+                <option value="10" {% if page_size == '10' %}selected{% endif %}>10</option>
+                <option value="25" {% if page_size == '25' %}selected{% endif %}>25</option>
+                <option value="50" {% if page_size == '50' %}selected{% endif %}>50</option>
+                <option value="100" {% if page_size == '100' %}selected{% endif %}>100</option>
+                <option value="all" {% if page_size == 'all' %}selected{% endif %}>All</option>
+            </select>
             <a href="{% url 'add_email' %}" class="btn"><i class="fas fa-plus"></i> Add Email</a>
             <button id="showDuplicatesBtn" class="btn bg-red-600 hover:bg-red-700 text-white flex items-center gap-2">
                 <i class="fas fa-exclamation-triangle"></i> Find Duplicates (<span id="duplicateCount">0</span>)
@@ -51,6 +57,17 @@
                 </tbody>
             </table>
         </div>
+        {% if is_paginated %}
+        <div class="pagination mt-4 flex justify-center gap-2">
+            {% if page_obj.has_previous %}
+            <a href="#" class="btn-paginate" data-page="{{ page_obj.previous_page_number }}">Previous</a>
+            {% endif %}
+            <span>Page <span id="currentPage">{{ page_obj.number }}</span> of <span id="totalPages">{{ page_obj.paginator.num_pages }}</span></span>
+            {% if page_obj.has_next %}
+            <a href="#" class="btn-paginate" data-page="{{ page_obj.next_page_number }}">Next</a>
+            {% endif %}
+        </div>
+        {% endif %}
         <div class="mt-4 flex gap-2">
             <button type="button" id="sendSelectedBtn" class="btn bg-green-600 hover:bg-green-700 text-white"><i class="fas fa-paper-plane"></i> Send to Selected</button>
             <button type="button" id="deleteSelectedBtn" class="btn bg-red-600 hover:bg-red-700 text-white"><i class="fas fa-trash-alt"></i> Delete Selected</button>
@@ -75,6 +92,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         let currentSort = { by: null, dir: 'asc' };
+        let currentPage = 1;
 
         // Function to update duplicates
         function updateDuplicates() {
@@ -173,13 +191,16 @@
             }
         });
 
-        // Real-time search and sorting
+        // Real-time search, sorting, and pagination
         const searchInput = document.getElementById('searchInput');
-        function performSearch(query = '', sortBy = null, sortDir = 'asc') {
+        const pageSizeSelect = document.getElementById('pageSizeSelect');
+        function performSearch(query = '', sortBy = null, sortDir = 'asc', page = 1, pageSize = '10') {
             const params = new URLSearchParams();
             if (query) params.append('q', query);
             if (sortBy) params.append('sort_by', sortBy);
             if (sortDir) params.append('sort_dir', sortDir);
+            if (page) params.append('page', page);
+            if (pageSize) params.append('page_size', pageSize);
 
             fetch(`/ajax_search/?${params.toString()}`)
                 .then(response => response.json())
@@ -197,7 +218,7 @@
                             tr.dataset.email = e.email;
                             tr.innerHTML = `
                                 <td><input type="checkbox" name="email_ids" value="${e.id}"></td>
-                                <td>${index + 1}</td>
+                                <td>${index + 1 + ((data.page - 1) * (pageSize === 'all' ? 0 : parseInt(pageSize)))}</td>
                                 <td>${e.username}</td>
                                 <td>${e.email}</td>
                                 <td><a href="/emails/delete/${e.id}/" class="text-red-500 hover:underline"><i class="fas fa-trash-alt"></i> Delete</a></td>
@@ -209,6 +230,43 @@
                     document.getElementById('showing').textContent = data.emails.length;
                     updateDuplicates();
                     attachSelectAll(); // Re-attach after update
+
+                    // Update pagination controls
+                    const paginationDiv = document.querySelector('.pagination');
+                    if (pageSize === 'all' || data.num_pages <= 1) {
+                        if (paginationDiv) paginationDiv.style.display = 'none';
+                    } else {
+                        if (!paginationDiv) {
+                            const newPagination = document.createElement('div');
+                            newPagination.className = 'pagination mt-4 flex justify-center gap-2';
+                            document.querySelector('#emailForm').insertBefore(newPagination, document.querySelector('.mt-4.flex.gap-2'));
+                            paginationDiv = newPagination;
+                        }
+                        paginationDiv.style.display = 'flex';
+                        document.getElementById('currentPage').textContent = data.page;
+                        document.getElementById('totalPages').textContent = data.num_pages;
+                        const prevBtn = paginationDiv.querySelector('.btn-paginate[data-page="previous"]');
+                        const nextBtn = paginationDiv.querySelector('.btn-paginate[data-page="next"]');
+                        if (prevBtn) prevBtn.remove();
+                        if (nextBtn) nextBtn.remove();
+                        if (data.has_previous) {
+                            const prevLink = document.createElement('a');
+                            prevLink.href = '#';
+                            prevLink.className = 'btn-paginate';
+                            prevLink.dataset.page = data.page - 1;
+                            prevLink.textContent = 'Previous';
+                            paginationDiv.insertBefore(prevLink, paginationDiv.firstChild);
+                        }
+                        if (data.has_next) {
+                            const nextLink = document.createElement('a');
+                            nextLink.href = '#';
+                            nextLink.className = 'btn-paginate';
+                            nextLink.dataset.page = data.page + 1;
+                            nextLink.textContent = 'Next';
+                            paginationDiv.appendChild(nextLink);
+                        }
+                    }
+
                     // Update sort indicators
                     document.querySelectorAll('th.sortable').forEach(th => {
                         th.classList.remove('asc', 'desc');
@@ -226,6 +284,15 @@
                             }
                         }
                     }
+
+                    // Re-attach pagination listeners
+                    document.querySelectorAll('.btn-paginate').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            currentPage = parseInt(btn.dataset.page);
+                            performSearch(searchInput.value, currentSort.by, currentSort.dir, currentPage, pageSizeSelect.value);
+                        });
+                    });
                 })
                 .catch(error => {
                     console.error('Error:', error);
@@ -234,7 +301,13 @@
 
         searchInput.addEventListener('keyup', function() {
             currentSort.by = null; // Reset sort on new search
-            performSearch(this.value, currentSort.by, currentSort.dir);
+            currentPage = 1; // Reset page on new search
+            performSearch(this.value, currentSort.by, currentSort.dir, currentPage, pageSizeSelect.value);
+        });
+
+        pageSizeSelect.addEventListener('change', function() {
+            currentPage = 1; // Reset to first page on size change
+            performSearch(searchInput.value, currentSort.by, currentSort.dir, currentPage, this.value);
         });
 
         // Sorting functionality (server-side)
@@ -246,21 +319,26 @@
                     newDir = 'desc';
                 }
                 currentSort = { by: sortBy, dir: newDir };
-                performSearch(searchInput.value, sortBy, newDir);
+                currentPage = 1; // Reset to first page on sort
+                performSearch(searchInput.value, sortBy, newDir, currentPage, pageSizeSelect.value);
             });
         });
 
-        // Initial load with possible sort
+        // Initial load with possible search, sort, and pagination
         const urlParams = new URLSearchParams(window.location.search);
         const initialQuery = urlParams.get('q') || '';
         const initialSortBy = urlParams.get('sort_by') || null;
         const initialSortDir = urlParams.get('sort_dir') || 'asc';
-        if (initialQuery || initialSortBy) {
-            performSearch(initialQuery, initialSortBy, initialSortDir);
+        const initialPage = urlParams.get('page') || 1;
+        const initialPageSize = urlParams.get('page_size') || '10';
+        if (initialQuery || initialSortBy || initialPage !== '1' || initialPageSize !== '10') {
+            performSearch(initialQuery, initialSortBy, initialSortDir, initialPage, initialPageSize);
             searchInput.value = initialQuery;
+            pageSizeSelect.value = initialPageSize;
             if (initialSortBy) {
                 currentSort = { by: initialSortBy, dir: initialSortDir };
             }
+            currentPage = parseInt(initialPage);
         }
     });
 </script>

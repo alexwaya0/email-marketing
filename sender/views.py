@@ -46,19 +46,32 @@ class EmailListView(ListView):
     model = UserEmail
     template_name = 'sender/email_list.html'
     context_object_name = 'emails'
+    paginate_by = 10  # Default pagination
 
     def get_queryset(self):
         queryset = super().get_queryset()
         query = self.request.GET.get('q')
+        sort_by = self.request.GET.get('sort_by', 'id')
+        sort_dir = self.request.GET.get('sort_dir', 'asc')
         if query:
             queryset = queryset.filter(
                 Q(username__icontains=query) | Q(email__icontains=query)
             )
-        return queryset
+        return queryset.order_by(f'{"-" if sort_dir == "desc" else ""}{sort_by}')
+
+    def get_paginate_by(self, queryset):
+        page_size = self.request.GET.get('page_size', '10')
+        if page_size == 'all':
+            return None  # No pagination for 'All'
+        try:
+            return int(page_size)
+        except ValueError:
+            return 10  # Fallback to default
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['total'] = UserEmail.objects.count()
+        context['page_size'] = self.request.GET.get('page_size', '10')
         return context
 
 
@@ -73,18 +86,13 @@ def bulk_delete(request):
     if request.method == 'POST':
         email_ids = request.POST.getlist('email_ids')
         if not email_ids:
-            messages.warning(request, "No emails selected for deletion.")
+            messages.warning(request, "No emails selected.")
             return redirect('email_list')
-        try:
-            emails = UserEmail.objects.filter(id__in=email_ids)
-            count = emails.count()
-            if count == 0:
-                messages.warning(request, "No valid emails selected for deletion.")
-            else:
-                emails.delete()
-                messages.success(request, f"Successfully deleted {count} email(s).")
-        except Exception as e:
-            messages.error(request, f"Error deleting emails: {str(e)}")
+
+        emails = UserEmail.objects.filter(id__in=email_ids)
+        count = emails.count()
+        emails.delete()
+        messages.success(request, f"{count} emails deleted successfully.")
     return redirect('email_list')
 
 
@@ -196,14 +204,39 @@ def ajax_search(request):
     query = request.GET.get('q', '')
     sort_by = request.GET.get('sort_by', 'id')
     sort_dir = request.GET.get('sort_dir', 'asc')
+    page_size = request.GET.get('page_size', '10')
+    page = request.GET.get('page', 1)
+
     emails = UserEmail.objects.filter(
         Q(username__icontains=query) | Q(email__icontains=query)
     ).order_by(f'{"-" if sort_dir == "desc" else ""}{sort_by}')
+
+    if page_size == 'all':
+        paginated_emails = emails
+        page_obj = None
+    else:
+        paginator = Paginator(emails, int(page_size))
+        try:
+            page_obj = paginator.page(page)
+            paginated_emails = page_obj.object_list
+        except:
+            page_obj = None
+            paginated_emails = []
+
     data = [
         {
             'id': e.id,
             'username': e.username,
             'email': e.email,
-        } for e in emails
+        } for e in paginated_emails
     ]
-    return JsonResponse({'emails': data, 'total': UserEmail.objects.count()})
+
+    response = {
+        'emails': data,
+        'total': emails.count(),
+        'page': int(page) if page_obj else 1,
+        'has_next': page_obj.has_next() if page_obj else False,
+        'has_previous': page_obj.has_previous() if page_obj else False,
+        'num_pages': page_obj.paginator.num_pages if page_obj else 1,
+    }
+    return JsonResponse(response)

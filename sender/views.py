@@ -11,8 +11,8 @@ from django.http import JsonResponse
 from django.template import Template, Context
 import pandas as pd
 
-from .models import UserEmail, EmailTemplate
-from .forms import UploadExcelForm, EmailTemplateForm, AddEmailForm
+from .models import UserEmail, EmailTemplate, SiteSettings
+from .forms import UploadExcelForm, EmailTemplateForm, AddEmailForm, SiteSettingsForm
 
 
 def dashboard(request):
@@ -122,6 +122,12 @@ def send_emails(request):
         messages.warning(request, "No recipients found in the system.")
         return redirect('email_list')
 
+    try:
+        SiteSettings.objects.get()  # Check if settings exist
+    except SiteSettings.DoesNotExist:
+        messages.error(request, "Email settings are not configured. Please configure them in Settings.")
+        return redirect('site_settings')
+
     # Pagination setup for batching
     paginator = Paginator(emails, 50)  # send 50 per batch
     page_number = request.GET.get("page", 1)
@@ -132,15 +138,18 @@ def send_emails(request):
         html_content = Template(template.html_content).render(Context(context))
         text_content = strip_tags(html_content)
 
-        # This will print to console instead of sending
         msg = EmailMultiAlternatives(
             subject="Hello from Django App",
             body=text_content,
-            from_email=settings.DEFAULT_FROM_EMAIL,
+            from_email=None,  # Use dynamic DEFAULT_FROM_EMAIL from SiteSettings
             to=[user_email.email]
         )
         msg.attach_alternative(html_content, "text/html")
-        msg.send()  # with console backend → prints in terminal
+        try:
+            msg.send()
+        except Exception as e:
+            messages.error(request, f"Failed to send email to {user_email.email}: {str(e)}")
+            return redirect('email_list')
 
     # If there's another page, redirect to it
     if page_obj.has_next():
@@ -148,7 +157,7 @@ def send_emails(request):
         messages.info(request, f"Batch {page_number} processed. Continuing to next batch...")
         return redirect(next_url)
 
-    messages.success(request, "All emails processed successfully! (Check your terminal output).")
+    messages.success(request, "All emails processed successfully!")
     return redirect('email_list')
 
 
@@ -164,6 +173,12 @@ def send_selected(request):
             messages.error(request, "No email template found. Please create one before sending emails.")
             return redirect('edit_template')
 
+        try:
+            SiteSettings.objects.get()  # Check if settings exist
+        except SiteSettings.DoesNotExist:
+            messages.error(request, "Email settings are not configured. Please configure them in Settings.")
+            return redirect('site_settings')
+
         emails = UserEmail.objects.filter(id__in=email_ids)
         if not emails.exists():
             messages.warning(request, "No valid recipients selected.")
@@ -177,13 +192,17 @@ def send_selected(request):
             msg = EmailMultiAlternatives(
                 subject="Hello from Django App",
                 body=text_content,
-                from_email=settings.DEFAULT_FROM_EMAIL,
+                from_email=None,  # Use dynamic DEFAULT_FROM_EMAIL from SiteSettings
                 to=[user_email.email]
             )
             msg.attach_alternative(html_content, "text/html")
-            msg.send()
+            try:
+                msg.send()
+            except Exception as e:
+                messages.error(request, f"Failed to send email to {user_email.email}: {str(e)}")
+                return redirect('email_list')
 
-        messages.success(request, f"Emails sent to {len(emails)} selected recipients successfully! (Check your terminal output).")
+        messages.success(request, f"Emails sent to {len(emails)} selected recipients successfully!")
     return redirect('email_list')
 
 
@@ -198,6 +217,19 @@ def edit_template(request):
     else:
         form = EmailTemplateForm(instance=template)
     return render(request, 'sender/edit_template.html', {'form': form})
+
+
+def site_settings(request):
+    settings_obj, created = SiteSettings.objects.get_or_create()
+    if request.method == 'POST':
+        form = SiteSettingsForm(request.POST, instance=settings_obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Email settings updated successfully.")
+            return redirect('dashboard')
+    else:
+        form = SiteSettingsForm(instance=settings_obj)
+    return render(request, 'sender/site_settings.html', {'form': form})
 
 
 def ajax_search(request):

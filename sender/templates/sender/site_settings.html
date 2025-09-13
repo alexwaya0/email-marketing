@@ -1,0 +1,38 @@
+{% extends 'sender/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="card">
+    <h2><i class="fas fa-cog"></i> Email Settings</h2>
+    <p class="text-gray-600 mb-6">Configure your SMTP settings to enable email sending. Ensure all required fields are filled correctly.</p>
+    <form method="post">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}
+                <p class="text-gray-500 text-sm mt-1">{{ field.help_text }}</p>
+                {% endif %}
+                {% if field.errors %}
+                <ul class="text-red-500 text-sm mt-1">
+                    {% for error in field.errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <div class="mt-6 flex gap-4">
+            <button type="submit" class="btn bg-green-600 hover:bg-green-700 text-white">
+                <i class="fas fa-save"></i> Save Settings
+            </button>
+            <a href="{% url 'dashboard' %}" class="btn bg-gray-600 hover:bg-gray-700 text-white">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,23 +1,103 @@
 {% extends 'sender/base.html' %}
+{% load static %}
 
 {% block content %}
-<div class="card">
-    <h2><i class="fas fa-upload"></i> Upload Excel File</h2>
-    <div class="w-full">
-        <p class="text-gray-600 text-sm mb-4">Upload an Excel file with 'username' and 'email' columns. Duplicate emails will be automatically filtered.</p>
-        <form method="post" enctype="multipart/form-data" class="space-y-6">
-            {% csrf_token %}
-            <div class="form-group">
-                {{ form.excel_file.label_tag }}
-                <div class="relative">
-                    <i class="fas fa-file-excel absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1A3C34]"></i>
-                    <input type="file" name="excel_file" class="pl-10 w-full" required>
-                </div>
+<div class="card relative overflow-hidden max-w-lg mx-auto">
+    <div class="absolute inset-0 bg-gradient-to-br from-[#1A3C34]/10 to-[#F59E0B]/10 opacity-50"></div>
+    <h2 class="relative z-10 flex items-center gap-2 text-2xl font-bold text-[#1A3C34] mb-6">
+        <i class="fas fa-upload text-[#F59E0B]"></i> Upload Excel File
+    </h2>
+    <p class="relative z-10 text-gray-600 mb-8 text-sm">
+        Upload an Excel file with 'username' and 'email' columns. Duplicate emails will be automatically filtered.
+    </p>
+    <form method="post" enctype="multipart/form-data" class="relative z-10 space-y-6">
+        {% csrf_token %}
+        <div class="form-group relative">
+            <label for="{{ form.excel_file.id_for_label }}" class="absolute -top-2.5 left-3 text-xs font-medium text-[#1A3C34] bg-[#F7FAFC] px-1 transition-all duration-300">
+                {{ form.excel_file.label }}
+            </label>
+            <div class="relative">
+                <i class="fas fa-file-excel absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1A3C34] text-lg"></i>
+                <input type="file" name="excel_file" id="{{ form.excel_file.id_for_label }}" class="pl-12 pr-4 w-full border-[#D1E7F0] rounded-lg bg-white shadow-sm focus:border-[#F59E0B] focus:ring-2 focus:ring-[#F59E0B]/20 transition-all duration-300 py-2.5 text-sm" accept=".xlsx,.xls" required>
             </div>
-            <div>
-                <button type="submit" class="btn"><i class="fas fa-cloud-upload-alt"></i> Upload File</button>
-            </div>
-        </form>
-    </div>
+            {% if form.excel_file.errors %}
+            <ul class="text-red-500 text-xs mt-1.5">
+                {% for error in form.excel_file.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        <div class="flex gap-4">
+            <button type="submit" class="btn bg-[#1A3C34] hover:bg-[#25544A] text-white shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5">
+                <i class="fas fa-cloud-upload-alt mr-2"></i> Upload File
+            </button>
+            <a href="{% url 'email_list' %}" class="btn bg-gray-500 hover:bg-gray-600 text-white shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5">
+                <i class="fas fa-times mr-2"></i> Cancel
+            </a>
+        </div>
+    </form>
 </div>
+
+<style>
+    .card {
+        background-color: #F7FAFC;
+        border-radius: 0.75rem;
+        padding: 2rem;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .form-group input[type="file"] {
+        border: 1px solid #D1E7F0;
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        background-color: #FFFFFF;
+        transition: all 0.3s ease;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    .form-group input[type="file"]:focus {
+        border-color: #F59E0B;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.05);
+        outline: none;
+    }
+    .form-group input[type="file"]::-webkit-file-upload-button {
+        background-color: #F59E0B;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        margin-right: 0.75rem;
+    }
+    .form-group input[type="file"]::-webkit-file-upload-button:hover {
+        background-color: #D97706;
+    }
+    .form-group input:not(:placeholder-shown) + label,
+    .form-group input[type="file"] + label {
+        transform: translateY(-2.5rem);
+        font-size: 0.75rem;
+        color: #1A3C34;
+    }
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    .btn:hover {
+        background-image: linear-gradient(to right, #F59E0B, #D97706);
+    }
+    .form-group label {
+        transition: all 0.3s ease;
+    }
+</style>
 {% endblock %}

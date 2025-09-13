@@ -2,16 +2,24 @@
 {% load static %}
 
 {% block content %}
-<div class="card">
-    <h2><i class="fas fa-envelope"></i> Email List</h2>
-    <p>Total emails: <span id="total">{{ total }}</span> | Showing: <span id="showing">{{ emails.count }}</span></p>
-    <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-        <div class="relative flex-grow">
-            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1A3C34]"></i>
-            <input type="text" id="searchInput" placeholder="Search by username or email" class="pl-10 w-full">
+<div class="card relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-br from-[#1A3C34]/10 to-[#F59E0B]/10 opacity-50"></div>
+    <h2 class="relative z-10 flex items-center gap-2 text-2xl font-bold text-[#1A3C34] mb-6">
+        <i class="fas fa-envelope text-[#F59E0B]"></i> Email List
+    </h2>
+    <p class="relative z-10 text-gray-600 mb-6 text-sm">
+        Total emails: <span id="total">{{ total }}</span> | Showing: <span id="showing">{{ emails.count }}</span>
+    </p>
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+        <div class="relative flex-grow max-w-lg">
+            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1A3C34] text-lg"></i>
+            <input type="text" id="searchInput" placeholder="Search by username or email" class="pl-12 pr-10 w-full border-[#D1E7F0] rounded-lg bg-white shadow-sm focus:border-[#F59E0B] focus:ring-2 focus:ring-[#F59E0B]/20 transition-all duration-300 py-2.5 text-sm">
+            <button type="button" id="resetSearch" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-[#F59E0B] transition-colors duration-200 hidden">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
-        <div class="flex items-center gap-4 mt-4 md:mt-0">
-            <select id="pageSizeSelect" class="border rounded px-2 py-1">
+        <div class="flex items-center gap-4 flex-wrap">
+            <select id="pageSizeSelect" class="border-[#D1E7F0] rounded-lg px-3 py-2 bg-white shadow-sm focus:border-[#F59E0B] focus:ring-2 focus:ring-[#F59E0B]/20 transition-all duration-300 text-sm">
                 <option value="5" {% if page_size == '5' %}selected{% endif %}>5</option>
                 <option value="10" {% if page_size == '10' %}selected{% endif %}>10</option>
                 <option value="25" {% if page_size == '25' %}selected{% endif %}>25</option>
@@ -19,140 +27,157 @@
                 <option value="100" {% if page_size == '100' %}selected{% endif %}>100</option>
                 <option value="all" {% if page_size == 'all' %}selected{% endif %}>All</option>
             </select>
-            <a href="{% url 'add_email' %}" class="btn"><i class="fas fa-plus"></i> Add Email</a>
-            <button id="showDuplicatesBtn" class="btn bg-red-600 hover:bg-red-700 text-white flex items-center gap-2">
-                <i class="fas fa-exclamation-triangle"></i> Find Duplicates (<span id="duplicateCount">0</span>)
+            <a href="{% url 'add_email' %}" class="btn bg-[#1A3C34] hover:bg-[#25544A] text-white shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5">
+                <i class="fas fa-plus mr-2"></i> Add Email
+            </a>
+            <button type="button" id="sendSelectedBtn" class="btn bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5">
+                <i class="fas fa-paper-plane mr-2"></i> Send to Selected
             </button>
-            <a href="{% url 'send_emails' %}" class="btn bg-blue-600 hover:bg-blue-700 text-white"><i class="fas fa-paper-plane"></i> Send to All</a>
+            <button type="button" id="deleteSelectedBtn" class="btn bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5">
+                <i class="fas fa-trash-alt mr-2"></i> Delete Selected
+            </button>
         </div>
     </div>
-    <form method="post" id="emailForm">
+    <form method="post" id="emailForm" class="relative z-10">
         {% csrf_token %}
         <div class="overflow-x-auto">
-            <table class="w-full">
+            <table class="w-full border-collapse">
                 <thead>
-                    <tr>
-                        <th class="w-12 text-center"><input type="checkbox" id="selectAll"></th>
-                        <th class="w-16 text-center">#</th>
-                        <th class="w-1/3 cursor-pointer sortable" data-sort="username">Username <i class="fas fa-sort ml-2"></i></th>
-                        <th class="w-1/3 cursor-pointer sortable" data-sort="email">Email <i class="fas fa-sort ml-2"></i></th>
-                        <th class="w-1/6 text-center">Actions</th>
+                    <tr class="bg-[#D1E7F0] text-[#1A3C34] font-semibold">
+                        <th class="w-12 text-center py-4">
+                            <input type="checkbox" id="selectAll" class="accent-[#F59E0B] cursor-pointer">
+                        </th>
+                        <th class="w-16 text-center py-4">#</th>
+                        <th class="w-1/3 py-4 cursor-pointer sortable" data-sort="username">
+                            Username
+                            <i class="fas fa-sort ml-2 transition-all duration-200"></i>
+                        </th>
+                        <th class="w-1/3 py-4 cursor-pointer sortable" data-sort="email">
+                            Email
+                            <i class="fas fa-sort ml-2 transition-all duration-200"></i>
+                        </th>
+                        <th class="w-1/6 text-center py-4">Actions</th>
                     </tr>
                 </thead>
-                <tbody id="emailTableBody">
+                <tbody id="emailTableBody" class="bg-white">
                     {% for email in emails %}
-                    <tr data-username="{{ email.username }}" data-email="{{ email.email }}">
-                        <td class="w-12 text-center"><input type="checkbox" name="email_ids" value="{{ email.id }}"></td>
-                        <td class="w-16 text-center">{{ forloop.counter }}</td>
-                        <td class="w-1/3">{{ email.username }}</td>
-                        <td class="w-1/3">{{ email.email }}</td>
-                        <td class="w-1/6 text-center">
-                            <a href="{% url 'delete_email' email.pk %}" class="text-red-500 hover:underline"><i class="fas fa-trash-alt"></i> Delete</a>
+                    <tr data-username="{{ email.username }}" data-email="{{ email.email }}" class="hover:bg-[#F7FAFC] transition-all duration-200 border-b border-[#E2E8F0]/50">
+                        <td class="w-12 text-center py-3">
+                            <input type="checkbox" name="email_ids" value="{{ email.id }}" class="accent-[#F59E0B] cursor-pointer">
+                        </td>
+                        <td class="w-16 text-center py-3 text-sm">{{ forloop.counter }}</td>
+                        <td class="w-1/3 py-3 text-sm">{{ email.username }}</td>
+                        <td class="w-1/3 py-3 text-sm">{{ email.email }}</td>
+                        <td class="w-1/6 text-center py-3">
+                            <a href="{% url 'delete_email' email.pk %}" class="text-red-500 hover:text-red-600 transition-colors duration-200 flex items-center justify-center gap-1 text-sm">
+                                <i class="fas fa-trash-alt"></i> Delete
+                            </a>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="text-center text-gray-500 py-4 text-sm"><i class="fas fa-inbox"></i> No emails found.</td>
+                        <td colspan="5" class="text-center text-gray-500 py-6 text-sm">
+                            <i class="fas fa-inbox mr-2"></i> No emails found.
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         {% if is_paginated %}
-        <div class="pagination mt-4 flex justify-center gap-2">
+        <div class="pagination mt-6 flex justify-center gap-3">
             {% if page_obj.has_previous %}
-            <a href="#" class="btn-paginate" data-page="{{ page_obj.previous_page_number }}">Previous</a>
+            <a href="#" class="btn-paginate bg-[#F7FAFC] hover:bg-[#D1E7F0] text-[#1A3C34] px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-300" data-page="{{ page_obj.previous_page_number }}">Previous</a>
             {% endif %}
-            <span>Page <span id="currentPage">{{ page_obj.number }}</span> of <span id="totalPages">{{ page_obj.paginator.num_pages }}</span></span>
+            <span class="px-4 py-2 text-[#1A3C34] text-sm">
+                Page <span id="currentPage">{{ page_obj.number }}</span> of <span id="totalPages">{{ page_obj.paginator.num_pages }}</span>
+            </span>
             {% if page_obj.has_next %}
-            <a href="#" class="btn-paginate" data-page="{{ page_obj.next_page_number }}">Next</a>
+            <a href="#" class="btn-paginate bg-[#F7FAFC] hover:bg-[#D1E7F0] text-[#1A3C34] px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-300" data-page="{{ page_obj.next_page_number }}">Next</a>
             {% endif %}
         </div>
         {% endif %}
-        <div class="mt-4 flex gap-2">
-            <button type="button" id="sendSelectedBtn" class="btn bg-green-600 hover:bg-green-700 text-white"><i class="fas fa-paper-plane"></i> Send to Selected</button>
-            <button type="button" id="deleteSelectedBtn" class="btn bg-red-600 hover:bg-red-700 text-white"><i class="fas fa-trash-alt"></i> Delete Selected</button>
-        </div>
     </form>
 </div>
 
-<div id="duplicateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
-    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 shadow-lg rounded-md bg-white">
-        <div class="flex justify-between items-center pb-3">
-            <h3 class="text-lg font-bold">Duplicate Emails</h3>
-            <button id="closeModalBtn" class="text-red-500 hover:text-red-700 text-xl font-bold">&times;</button>
-        </div>
-        <div class="mt-2 text-gray-600">
-            <p>Found <span id="modalDuplicateCount">0</span> duplicate emails.</p>
-            <div id="duplicateList" class="mt-4 max-h-64 overflow-y-auto">
-            </div>
-        </div>
-    </div>
-</div>
+<style>
+    .card {
+        background-color: #F7FAFC;
+        border-radius: 0.75rem;
+        padding: 2rem;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    table {
+        border-radius: 0.5rem;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    th {
+        background-color: #D1E7F0;
+        color: #1A3C34;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 1rem;
+    }
+    th.sortable:hover {
+        background-color: #B3D4E0;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    th.sortable.asc i, th.sortable.desc i {
+        color: #F59E0B;
+    }
+    td {
+        padding: 0.75rem;
+        color: #2D3748;
+        font-size: 0.875rem;
+    }
+    tr {
+        transition: background-color 0.2s ease;
+    }
+    tr:hover {
+        background-color: #F7FAFC;
+    }
+    input[type="checkbox"] {
+        accent-color: #F59E0B;
+        width: 1.25rem;
+        height: 1.25rem;
+        border-radius: 0.25rem;
+        cursor: pointer;
+    }
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    .btn:hover {
+        background-image: linear-gradient(to right, #F59E0B, #D97706);
+    }
+    .btn-paginate {
+        transition: all 0.3s ease;
+    }
+    #resetSearch {
+        cursor: pointer;
+    }
+    #searchInput:not(:placeholder-shown) ~ #resetSearch {
+        display: block;
+    }
+</style>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         let currentSort = { by: null, dir: 'asc' };
         let currentPage = 1;
-
-        // Function to update duplicates
-        function updateDuplicates() {
-            const emailRows = document.querySelectorAll('#emailTableBody tr:not([colspan])');
-            const emailList = [];
-            emailRows.forEach(row => {
-                const email = row.dataset.email.trim().toLowerCase();
-                emailList.push(email);
-            });
-
-            const seenEmails = new Set();
-            const duplicates = new Set();
-            emailList.forEach(email => {
-                if (seenEmails.has(email)) {
-                    duplicates.add(email);
-                }
-                seenEmails.add(email);
-            });
-
-            const duplicateCountElement = document.getElementById('duplicateCount');
-            const modalDuplicateCountElement = document.getElementById('modalDuplicateCount');
-            duplicateCountElement.textContent = duplicates.size;
-            modalDuplicateCountElement.textContent = duplicates.size;
-
-            const duplicateListContainer = document.getElementById('duplicateList');
-            duplicateListContainer.innerHTML = '';
-            if (duplicates.size > 0) {
-                duplicates.forEach(email => {
-                    const p = document.createElement('p');
-                    p.textContent = email;
-                    p.className = 'bg-gray-100 p-2 mb-2 rounded-md font-mono';
-                    duplicateListContainer.appendChild(p);
-                });
-            } else {
-                duplicateListContainer.innerHTML = '<p class="text-gray-500">No duplicate emails found. 🎉</p>';
-            }
-        }
-
-        // Initial duplicates update
-        updateDuplicates();
-
-        // Modal functionality
-        const duplicateModal = document.getElementById('duplicateModal');
-        const showDuplicatesBtn = document.getElementById('showDuplicatesBtn');
-        const closeModalBtn = document.getElementById('closeModalBtn');
-
-        showDuplicatesBtn.addEventListener('click', () => {
-            duplicateModal.classList.remove('hidden');
-        });
-
-        closeModalBtn.addEventListener('click', () => {
-            duplicateModal.classList.add('hidden');
-        });
-
-        window.addEventListener('click', (event) => {
-            if (event.target === duplicateModal) {
-                duplicateModal.classList.add('hidden');
-            }
-        });
 
         // Select all functionality
         const selectAllCheckbox = document.getElementById('selectAll');
@@ -195,6 +220,8 @@
         // Real-time search, sorting, and pagination
         const searchInput = document.getElementById('searchInput');
         const pageSizeSelect = document.getElementById('pageSizeSelect');
+        const resetSearchBtn = document.getElementById('resetSearch');
+
         function performSearch(query = '', sortBy = null, sortDir = 'asc', page = 1, pageSize = '10') {
             const params = new URLSearchParams();
             if (query) params.append('q', query);
@@ -210,26 +237,26 @@
                     tbody.innerHTML = '';
                     if (data.emails.length === 0) {
                         const tr = document.createElement('tr');
-                        tr.innerHTML = '<td colspan="5" class="text-center text-gray-500 py-4 text-sm"><i class="fas fa-inbox"></i> No emails found.</td>';
+                        tr.innerHTML = '<td colspan="5" class="text-center text-gray-500 py-6 text-sm"><i class="fas fa-inbox mr-2"></i> No emails found.</td>';
                         tbody.appendChild(tr);
                     } else {
                         data.emails.forEach((e, index) => {
                             const tr = document.createElement('tr');
                             tr.dataset.username = e.username;
                             tr.dataset.email = e.email;
+                            tr.className = 'hover:bg-[#F7FAFC] transition-all duration-200 border-b border-[#E2E8F0]/50';
                             tr.innerHTML = `
-                                <td class="w-12 text-center"><input type="checkbox" name="email_ids" value="${e.id}"></td>
-                                <td class="w-16 text-center">${index + 1 + ((data.page - 1) * (pageSize === 'all' ? 0 : parseInt(pageSize)))}</td>
-                                <td class="w-1/3">${e.username}</td>
-                                <td class="w-1/3">${e.email}</td>
-                                <td class="w-1/6 text-center"><a href="/emails/delete/${e.id}/" class="text-red-500 hover:underline"><i class="fas fa-trash-alt"></i> Delete</a></td>
+                                <td class="w-12 text-center py-3"><input type="checkbox" name="email_ids" value="${e.id}" class="accent-[#F59E0B] cursor-pointer"></td>
+                                <td class="w-16 text-center py-3 text-sm">${index + 1 + ((data.page - 1) * (pageSize === 'all' ? 0 : parseInt(pageSize)))}</td>
+                                <td class="w-1/3 py-3 text-sm">${e.username}</td>
+                                <td class="w-1/3 py-3 text-sm">${e.email}</td>
+                                <td class="w-1/6 text-center py-3"><a href="/emails/delete/${e.id}/" class="text-red-500 hover:text-red-600 transition-colors duration-200 flex items-center justify-center gap-1 text-sm"><i class="fas fa-trash-alt"></i> Delete</a></td>
                             `;
                             tbody.appendChild(tr);
                         });
                     }
                     document.getElementById('total').textContent = data.total;
                     document.getElementById('showing').textContent = data.emails.length;
-                    updateDuplicates();
                     attachSelectAll(); // Re-attach after update
 
                     // Update pagination controls
@@ -239,8 +266,8 @@
                     } else {
                         if (!paginationDiv) {
                             const newPagination = document.createElement('div');
-                            newPagination.className = 'pagination mt-4 flex justify-center gap-2';
-                            document.querySelector('#emailForm').insertBefore(newPagination, document.querySelector('.mt-4.flex.gap-2'));
+                            newPagination.className = 'pagination mt-6 flex justify-center gap-3';
+                            document.querySelector('#emailForm').appendChild(newPagination);
                             paginationDiv = newPagination;
                         }
                         paginationDiv.style.display = 'flex';
@@ -253,7 +280,7 @@
                         if (data.has_previous) {
                             const prevLink = document.createElement('a');
                             prevLink.href = '#';
-                            prevLink.className = 'btn-paginate';
+                            prevLink.className = 'btn-paginate bg-[#F7FAFC] hover:bg-[#D1E7F0] text-[#1A3C34] px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-300';
                             prevLink.dataset.page = data.page - 1;
                             prevLink.textContent = 'Previous';
                             paginationDiv.insertBefore(prevLink, paginationDiv.firstChild);
@@ -261,7 +288,7 @@
                         if (data.has_next) {
                             const nextLink = document.createElement('a');
                             nextLink.href = '#';
-                            nextLink.className = 'btn-paginate';
+                            nextLink.className = 'btn-paginate bg-[#F7FAFC] hover:bg-[#D1E7F0] text-[#1A3C34] px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-300';
                             nextLink.dataset.page = data.page + 1;
                             nextLink.textContent = 'Next';
                             paginationDiv.appendChild(nextLink);
@@ -271,7 +298,7 @@
                     // Update sort indicators
                     document.querySelectorAll('th.sortable').forEach(th => {
                         th.classList.remove('asc', 'desc');
-                        th.querySelector('i').className = 'fas fa-sort ml-2';
+                        th.querySelector('i').className = 'fas fa-sort ml-2 transition-all duration-200';
                     });
                     if (sortBy) {
                         const activeTh = document.querySelector(`th[data-sort="${sortBy}"]`);
@@ -279,9 +306,9 @@
                             activeTh.classList.add(sortDir);
                             const icon = activeTh.querySelector('i');
                             if (sortDir === 'asc') {
-                                icon.className = 'fas fa-sort-alpha-up ml-2';
+                                icon.className = 'fas fa-sort-alpha-up ml-2 transition-all duration-200';
                             } else {
-                                icon.className = 'fas fa-sort-alpha-down ml-2';
+                                icon.className = 'fas fa-sort-alpha-down ml-2 transition-all duration-200';
                             }
                         }
                     }
@@ -300,12 +327,25 @@
                 });
         }
 
-        searchInput.addEventListener('keyup', function() {
+        // Search input handling
+        searchInput.addEventListener('input', function() {
+            resetSearchBtn.classList.toggle('hidden', this.value === '');
             currentSort.by = null; // Reset sort on new search
             currentPage = 1; // Reset page on new search
             performSearch(this.value, currentSort.by, currentSort.dir, currentPage, pageSizeSelect.value);
         });
 
+        // Reset search functionality
+        resetSearchBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            this.classList.add('hidden');
+            currentSort.by = null;
+            currentPage = 1;
+            performSearch('', currentSort.by, currentSort.dir, currentPage, pageSizeSelect.value);
+            searchInput.focus();
+        });
+
+        // Page size change handling
         pageSizeSelect.addEventListener('change', function() {
             currentPage = 1; // Reset to first page on size change
             performSearch(searchInput.value, currentSort.by, currentSort.dir, currentPage, this.value);
@@ -336,6 +376,7 @@
             performSearch(initialQuery, initialSortBy, initialSortDir, initialPage, initialPageSize);
             searchInput.value = initialQuery;
             pageSizeSelect.value = initialPageSize;
+            if (initialQuery) resetSearchBtn.classList.remove('hidden');
             if (initialSortBy) {
                 currentSort = { by: initialSortBy, dir: initialSortDir };
             }

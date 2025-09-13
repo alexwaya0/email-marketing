@@ -1,24 +1,40 @@
 {% extends 'sender/base.html' %}
+{% load static %}
 
 {% block content %}
-<div class="space-y-6">
-    <div class="card">
-        <h2><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
-        <p class="text-gray-600 text-sm">Manage your email campaigns with ease using OMLA OS<sup>®</sup>.</p>
+<div class="relative">
+    <div class="card relative overflow-hidden mb-8">
+        <div class="absolute inset-0 bg-gradient-to-br from-[#1A3C34]/10 to-[#F59E0B]/10 opacity-50"></div>
+        <h2 class="relative z-10 flex items-center gap-2 text-2xl font-bold text-[#1A3C34] mb-4">
+            <i class="fas fa-tachometer-alt text-[#F59E0B]"></i> Dashboard
+        </h2>
+        <p class="relative z-10 text-gray-600 text-sm">
+            Welcome{% if user.is_authenticated %}, {{ user.username|title }}{% endif %}! Manage your email campaigns with OMLA OS<sup>®</sup>.
+        </p>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="card">
-            <h3 class="text-base font-semibold text-[#1A3C34] mb-4"><i class="fas fa-chart-line mr-2"></i> Quick Stats</h3>
-            <div class="space-y-2">
-                <div class="flex justify-between items-center">
-                    <span class="text-gray-600 text-sm">Total Emails</span>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="card relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-br from-[#1A3C34]/5 to-[#F59E0B]/5 opacity-50"></div>
+            <h3 class="relative z-10 text-base font-semibold text-[#1A3C34] mb-4 flex items-center gap-2">
+                <i class="fas fa-chart-line text-[#F59E0B]"></i> Quick Stats
+            </h3>
+            <div class="relative z-10 space-y-4">
+                <div class="flex items-center justify-between p-3 bg-[#F7FAFC] rounded-lg shadow-sm hover:shadow-md transition-all duration-300">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-users text-[#1A3C34] text-lg"></i>
+                        <span class="text-gray-600 text-sm">Total Emails</span>
+                    </div>
                     <span class="font-bold text-[#1A3C34] text-sm">{{ emails.count }}</span>
                 </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-gray-600 text-sm">Last Upload</span>
+                <div class="flex items-center justify-between p-3 bg-[#F7FAFC] rounded-lg shadow-sm hover:shadow-md transition-all duration-300">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-clock text-[#1A3C34] text-lg"></i>
+                        <span class="text-gray-600 text-sm">Last Upload</span>
+                    </div>
                     <span class="font-bold text-[#1A3C34] text-sm">
                         {% if last_upload %}
-                            {{ last_upload|date:"M d, Y" }}
+                            {{ last_upload|date:"M d, Y H:i" }}
                         {% else %}
                             None
                         {% endif %}
@@ -26,18 +42,80 @@
                 </div>
             </div>
         </div>
-        <div class="card">
-            <h3 class="text-base font-semibold text-[#1A3C34] mb-4"><i class="fas fa-bolt mr-2"></i> Quick Actions</h3>
-            <div class="flex flex-col gap-4">
-                <a href="{% url 'upload_excel' %}" class="btn w-full text-left"><i class="fas fa-upload"></i> Upload New File</a>
-                <a href="{% url 'send_emails' %}" class="btn w-full text-left"><i class="fas fa-paper-plane"></i> Send Emails</a>
-                <a href="{% url 'edit_template' %}" class="btn w-full text-left"><i class="fas fa-edit"></i> Edit Email Template</a>
+        <div class="card relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-br from-[#1A3C34]/5 to-[#F59E0B]/5 opacity-50"></div>
+            <h3 class="relative z-10 text-base font-semibold text-[#1A3C34] mb-4 flex items-center gap-2">
+                <i class="fas fa-bolt text-[#F59E0B]"></i> Quick Actions
+            </h3>
+            <div class="relative z-10 flex flex-col gap-3">
+                <a href="{% url 'upload_excel' %}" class="btn bg-[#1A3C34] hover:bg-[#25544A] text-white shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 flex items-center gap-2">
+                    <i class="fas fa-upload"></i> Upload New File
+                </a>
+                <a href="{% url 'send_emails' %}" class="btn bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 flex items-center gap-2">
+                    <i class="fas fa-paper-plane"></i> Send Emails
+                </a>
+                <a href="{% url 'edit_template' %}" class="btn bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 flex items-center gap-2">
+                    <i class="fas fa-edit"></i> Edit Email Template
+                </a>
+                <a href="{% url 'site_settings' %}" class="btn bg-gray-600 hover:bg-gray-700 text-white shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 flex items-center gap-2">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
             </div>
         </div>
     </div>
-    <div class="card">
-        <h3 class="text-base font-semibold text-[#1A3C34] mb-4"><i class="fas fa-info-circle mr-2"></i> About OMLA OS<sup>®</sup></h3>
-        <p class="text-gray-600 text-sm">OMLA OS<sup>®</sup> is your go-to solution for sending personalized email campaigns. Upload Excel files with usernames and emails, manage your recipient list, and craft custom HTML email templates with ease. Use the sidebar to navigate and start your campaign today.</p>
+
+    {% if recent_activity %}
+    <div class="card relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-[#1A3C34]/5 to-[#F59E0B]/5 opacity-50"></div>
+        <h3 class="relative z-10 text-base font-semibold text-[#1A3C34] mb-4 flex items-center gap-2">
+            <i class="fas fa-history text-[#F59E0B]"></i> Recent Activity
+        </h3>
+        <div class="relative z-10 space-y-3">
+            {% for activity in recent_activity|slice:":5" %}
+            <div class="flex items-center justify-between p-3 bg-[#F7FAFC] rounded-lg shadow-sm hover:shadow-md transition-all duration-300">
+                <div class="flex items-center gap-2">
+                    <i class="fas {{ activity.icon }} text-[#1A3C34] text-lg"></i>
+                    <span class="text-gray-600 text-sm">{{ activity.description }}</span>
+                </div>
+                <span class="text-[#1A3C34] text-sm">{{ activity.timestamp|date:"M d, Y H:i" }}</span>
+            </div>
+            {% empty %}
+            <div class="text-center text-gray-500 py-4 text-sm">
+                <i class="fas fa-inbox mr-2"></i> No recent activity.
+            </div>
+            {% endfor %}
+        </div>
     </div>
+    {% endif %}
 </div>
+
+<style>
+    .card {
+        background-color: #F7FAFC;
+        border-radius: 0.75rem;
+        padding: 2rem;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    .btn:hover {
+        background-image: linear-gradient(to right, #F59E0B, #D97706);
+    }
+    sup {
+        font-size: 0.75rem;
+        vertical-align: super;
+    }
+</style>
 {% endblock %}

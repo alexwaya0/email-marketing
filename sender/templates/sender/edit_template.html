@@ -8,8 +8,18 @@
         <i class="fas fa-code text-[#F59E0B]"></i> Edit Email Template
     </h2>
     <p class="relative z-10 text-gray-600 mb-8 text-sm">
-        Write HTML code or upload an HTML file. Use <code class="font-mono bg-[#1A3C34] text-[#E6F0FA] px-1 rounded">{{ username }}</code> to personalize the email content.
+        Write HTML code or upload an HTML file (will override textarea content). Use <code class="font-mono bg-[#1A3C34] text-[#E6F0FA] px-1 rounded">{{ username }}</code> to personalize the email content.
     </p>
+    {% if messages %}
+    <div class="relative z-10 mb-6">
+        {% for message in messages %}
+        <div class="p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %} text-sm flex items-center gap-2">
+            <i class="fas {% if message.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %}"></i>
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
     <form method="post" enctype="multipart/form-data" class="relative z-10 space-y-6">
         {% csrf_token %}
         <div class="form-group relative">
@@ -146,7 +156,6 @@
         const closePreview = document.getElementById('close-preview');
         const textarea = document.querySelector('textarea[name="html_content"]');
         const htmlFileInput = document.querySelector('input[name="html_file"]');
-        const iframe = document.getElementById('preview-iframe');
 
         // Preview button functionality
         previewBtn.addEventListener('click', () => {

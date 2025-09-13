@@ -1,0 +1,12 @@
+{% extends 'sender/base.html' %}
+
+{% block content %}
+<div class="card">
+    <h2>Add New Email</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn">Add Email</button>
+    </form>
+</div>
+{% endblock %}

@@ -2,15 +2,17 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView
 from django.db.models import Q
 from django.core.mail import EmailMultiAlternatives
-from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.conf import settings
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.db import IntegrityError
+from django.http import JsonResponse
+from django.template import Template, Context
 import pandas as pd
 
 from .models import UserEmail, EmailTemplate
-from .forms import UploadExcelForm, EmailTemplateForm
+from .forms import UploadExcelForm, EmailTemplateForm, AddEmailForm
 
 
 def dashboard(request):
@@ -44,7 +46,6 @@ class EmailListView(ListView):
     model = UserEmail
     template_name = 'sender/email_list.html'
     context_object_name = 'emails'
-    paginate_by = 20
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -55,12 +56,32 @@ class EmailListView(ListView):
             )
         return queryset
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['total'] = UserEmail.objects.count()
+        return context
+
 
 def delete_email(request, pk):
     email = get_object_or_404(UserEmail, pk=pk)
     email.delete()
     messages.success(request, f"Email {email.email} deleted successfully.")
     return redirect('email_list')
+
+
+def add_email(request):
+    if request.method == 'POST':
+        form = AddEmailForm(request.POST)
+        if form.is_valid():
+            try:
+                form.save()
+                messages.success(request, "Email added successfully.")
+                return redirect('email_list')
+            except IntegrityError:
+                messages.error(request, "Email already exists.")
+    else:
+        form = AddEmailForm()
+    return render(request, 'sender/add_email.html', {'form': form})
 
 
 def send_emails(request):
@@ -75,13 +96,13 @@ def send_emails(request):
         return redirect('email_list')
 
     # Pagination setup for batching
-    paginator = Paginator(emails, 50)  # 👈 send 50 per batch
+    paginator = Paginator(emails, 50)  # send 50 per batch
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
 
     for user_email in page_obj.object_list:
         context = {'username': user_email.username}
-        html_content = render_to_string('sender/email_template.html', context)
+        html_content = Template(template.html_content).render(Context(context))
         text_content = strip_tags(html_content)
 
         # This will print to console instead of sending
@@ -104,6 +125,41 @@ def send_emails(request):
     return redirect('email_list')
 
 
+def send_selected(request):
+    if request.method == 'POST':
+        email_ids = request.POST.getlist('email_ids')
+        if not email_ids:
+            messages.warning(request, "No emails selected.")
+            return redirect('email_list')
+
+        template = EmailTemplate.objects.first()
+        if not template:
+            messages.error(request, "No email template found. Please create one before sending emails.")
+            return redirect('edit_template')
+
+        emails = UserEmail.objects.filter(id__in=email_ids)
+        if not emails.exists():
+            messages.warning(request, "No valid recipients selected.")
+            return redirect('email_list')
+
+        for user_email in emails:
+            context = {'username': user_email.username}
+            html_content = Template(template.html_content).render(Context(context))
+            text_content = strip_tags(html_content)
+
+            msg = EmailMultiAlternatives(
+                subject="Hello from Django App",
+                body=text_content,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[user_email.email]
+            )
+            msg.attach_alternative(html_content, "text/html")
+            msg.send()
+
+        messages.success(request, f"Emails sent to {len(emails)} selected recipients successfully! (Check your terminal output).")
+    return redirect('email_list')
+
+
 def edit_template(request):
     template, created = EmailTemplate.objects.get_or_create(name="Default Template")
     if request.method == 'POST':
@@ -115,3 +171,18 @@ def edit_template(request):
     else:
         form = EmailTemplateForm(instance=template)
     return render(request, 'sender/edit_template.html', {'form': form})
+
+
+def ajax_search(request):
+    query = request.GET.get('q', '')
+    emails = UserEmail.objects.filter(
+        Q(username__icontains=query) | Q(email__icontains=query)
+    )
+    data = [
+        {
+            'id': e.id,
+            'username': e.username,
+            'email': e.email,
+        } for e in emails
+    ]
+    return JsonResponse({'emails': data, 'total': UserEmail.objects.count()})

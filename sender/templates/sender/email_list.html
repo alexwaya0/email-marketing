@@ -4,58 +4,55 @@
 {% block content %}
 <div class="card">
     <h2><i class="fas fa-envelope"></i> Email List</h2>
+    <p>Total emails: <span id="total">{{ total }}</span> | Showing: <span id="showing">{{ emails.count }}</span></p>
     <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-        <form method="get" class="flex gap-2 items-center flex-grow">
-            <div class="relative flex-grow">
-                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1A3C34]"></i>
-                <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by username or email" class="pl-10 w-full">
-            </div>
-            <button type="submit" class="btn"><i class="fas fa-search"></i> Search</button>
-        </form>
+        <div class="relative flex-grow">
+            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1A3C34]"></i>
+            <input type="text" id="searchInput" placeholder="Search by username or email" class="pl-10 w-full">
+        </div>
 
         <div class="flex items-center gap-4 mt-4 md:mt-0">
+            <a href="{% url 'add_email' %}" class="btn"><i class="fas fa-plus"></i> Add Email</a>
             <button id="showDuplicatesBtn" class="btn bg-red-600 hover:bg-red-700 text-white flex items-center gap-2">
                 <i class="fas fa-exclamation-triangle"></i> Find Duplicates (<span id="duplicateCount">0</span>)
             </button>
+            <a href="{% url 'send_emails' %}" class="btn bg-blue-600 hover:bg-blue-700 text-white"><i class="fas fa-paper-plane"></i> Send to All</a>
         </div>
     </div>
-    <div class="overflow-x-auto">
-        <table>
-            <thead>
-                <tr>
-                    <th class="cursor-pointer sortable" data-sort="username">Username <i class="fas fa-sort ml-2"></i></th>
-                    <th class="cursor-pointer sortable" data-sort="email">Email <i class="fas fa-sort ml-2"></i></th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="emailTableBody">
-                {% for email in emails %}
-                <tr data-username="{{ email.username }}" data-email="{{ email.email }}">
-                    <td>{{ email.username }}</td>
-                    <td>{{ email.email }}</td>
-                    <td>
-                        <a href="{% url 'delete_email' email.pk %}" class="text-red-500 hover:underline"><i class="fas fa-trash-alt"></i> Delete</a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="3" class="text-center text-gray-500 py-4 text-sm"><i class="fas fa-inbox"></i> No emails found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% if is_paginated %}
-    <div class="pagination">
-        {% if page_obj.has_previous %}
-        <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="btn-paginate"><i class="fas fa-chevron-left"></i> Previous</a>
-        {% endif %}
-        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-        {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="btn-paginate">Next <i class="fas fa-chevron-right"></i></a>
-        {% endif %}
-    </div>
-    {% endif %}
+    <form method="post" action="{% url 'send_selected' %}">
+        {% csrf_token %}
+        <div class="overflow-x-auto">
+            <table>
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="selectAll"></th>
+                        <th>#</th>
+                        <th class="cursor-pointer sortable">Username <i class="fas fa-sort ml-2"></i></th>
+                        <th class="cursor-pointer sortable">Email <i class="fas fa-sort ml-2"></i></th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="emailTableBody">
+                    {% for email in emails %}
+                    <tr data-username="{{ email.username }}" data-email="{{ email.email }}">
+                        <td><input type="checkbox" name="email_ids" value="{{ email.id }}"></td>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ email.username }}</td>
+                        <td>{{ email.email }}</td>
+                        <td>
+                            <a href="{% url 'delete_email' email.pk %}" class="text-red-500 hover:underline"><i class="fas fa-trash-alt"></i> Delete</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-gray-500 py-4 text-sm"><i class="fas fa-inbox"></i> No emails found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <button type="submit" class="btn bg-green-600 hover:bg-green-700 text-white mt-4"><i class="fas fa-paper-plane"></i> Send to Selected</button>
+    </form>
 </div>
 
 <div id="duplicateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
@@ -67,50 +64,52 @@
         <div class="mt-2 text-gray-600">
             <p>Found <span id="modalDuplicateCount">0</span> duplicate emails.</p>
             <div id="duplicateList" class="mt-4 max-h-64 overflow-y-auto">
-                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const emailRows = document.querySelectorAll('#emailTableBody tr:not([colspan])');
-        const emailList = [];
-
-        // Populate emailList with email addresses from the table
-        emailRows.forEach(row => {
-            const email = row.dataset.email.trim().toLowerCase();
-            emailList.push(email);
-        });
-
-        // Find duplicates
-        const seenEmails = new Set();
-        const duplicates = new Set();
-        emailList.forEach(email => {
-            if (seenEmails.has(email)) {
-                duplicates.add(email);
-            }
-            seenEmails.add(email);
-        });
-
-        // Update the duplicate count
-        const duplicateCountElement = document.getElementById('duplicateCount');
-        const modalDuplicateCountElement = document.getElementById('modalDuplicateCount');
-        duplicateCountElement.textContent = duplicates.size;
-        modalDuplicateCountElement.textContent = duplicates.size;
-
-        // Populate the modal list
-        const duplicateListContainer = document.getElementById('duplicateList');
-        if (duplicates.size > 0) {
-            duplicates.forEach(email => {
-                const p = document.createElement('p');
-                p.textContent = email;
-                p.className = 'bg-gray-100 p-2 mb-2 rounded-md font-mono';
-                duplicateListContainer.appendChild(p);
+        // Function to update duplicates
+        function updateDuplicates() {
+            const emailRows = document.querySelectorAll('#emailTableBody tr:not([colspan])');
+            const emailList = [];
+            emailRows.forEach(row => {
+                const email = row.dataset.email.trim().toLowerCase();
+                emailList.push(email);
             });
-        } else {
-            duplicateListContainer.innerHTML = '<p class="text-gray-500">No duplicate emails found. 🎉</p>';
+
+            const seenEmails = new Set();
+            const duplicates = new Set();
+            emailList.forEach(email => {
+                if (seenEmails.has(email)) {
+                    duplicates.add(email);
+                }
+                seenEmails.add(email);
+            });
+
+            const duplicateCountElement = document.getElementById('duplicateCount');
+            const modalDuplicateCountElement = document.getElementById('modalDuplicateCount');
+            duplicateCountElement.textContent = duplicates.size;
+            modalDuplicateCountElement.textContent = duplicates.size;
+
+            const duplicateListContainer = document.getElementById('duplicateList');
+            duplicateListContainer.innerHTML = '';
+            if (duplicates.size > 0) {
+                duplicates.forEach(email => {
+                    const p = document.createElement('p');
+                    p.textContent = email;
+                    p.className = 'bg-gray-100 p-2 mb-2 rounded-md font-mono';
+                    duplicateListContainer.appendChild(p);
+                });
+            } else {
+                duplicateListContainer.innerHTML = '<p class="text-gray-500">No duplicate emails found. 🎉</p>';
+            }
         }
+
+        // Initial duplicates update
+        updateDuplicates();
 
         // Modal functionality
         const duplicateModal = document.getElementById('duplicateModal');
@@ -125,11 +124,56 @@
             duplicateModal.classList.add('hidden');
         });
 
-        // Close modal when clicking outside of it
         window.addEventListener('click', (event) => {
             if (event.target === duplicateModal) {
                 duplicateModal.classList.add('hidden');
             }
+        });
+
+        // Select all functionality
+        document.getElementById('selectAll').addEventListener('change', function() {
+            document.querySelectorAll('input[name="email_ids"]').forEach(cb => {
+                cb.checked = this.checked;
+            });
+        });
+
+        // Real-time search
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('keyup', function() {
+            fetch(`/ajax_search/?q=${encodeURIComponent(this.value)}`)
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('emailTableBody');
+                    tbody.innerHTML = '';
+                    if (data.emails.length === 0) {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = '<td colspan="5" class="text-center text-gray-500 py-4 text-sm"><i class="fas fa-inbox"></i> No emails found.</td>';
+                        tbody.appendChild(tr);
+                    } else {
+                        data.emails.forEach((e, index) => {
+                            const tr = document.createElement('tr');
+                            tr.dataset.username = e.username;
+                            tr.dataset.email = e.email;
+                            tr.innerHTML = `
+                                <td><input type="checkbox" name="email_ids" value="${e.id}"></td>
+                                <td>${index + 1}</td>
+                                <td>${e.username}</td>
+                                <td>${e.email}</td>
+                                <td><a href="/emails/delete/${e.id}/" class="text-red-500 hover:underline"><i class="fas fa-trash-alt"></i> Delete</a></td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    }
+                    document.getElementById('total').textContent = data.total;
+                    document.getElementById('showing').textContent = data.emails.length;
+                    updateDuplicates();
+                    // Re-attach select all listener (since table updated)
+                    document.getElementById('selectAll').addEventListener('change', function() {
+                        document.querySelectorAll('input[name="email_ids"]').forEach(cb => {
+                            cb.checked = this.checked;
+                        });
+                    });
+                });
         });
 
         // Sorting functionality
@@ -146,11 +190,9 @@
                 const rows = Array.from(tbody.querySelectorAll('tr:not([colspan])'));
                 const index = Array.from(headerCell.parentNode.children).indexOf(headerCell);
 
-                // Check for current sort direction on the header
                 const isAsc = headerCell.classList.contains('asc');
                 const isDesc = headerCell.classList.contains('desc');
 
-                // Reset all other headers
                 document.querySelectorAll('th.sortable').forEach(h => {
                     if (h !== headerCell) {
                         h.classList.remove('asc', 'desc');
@@ -158,7 +200,6 @@
                     }
                 });
 
-                // Sort based on the current state
                 let newIsAsc;
                 if (isAsc) {
                     rows.sort(compare(index, false));
@@ -172,7 +213,7 @@
                     headerCell.classList.add('asc');
                     headerCell.querySelector('i').className = 'fas fa-sort-alpha-up ml-2';
                     newIsAsc = true;
-                } else { // First click
+                } else {
                     rows.sort(compare(index, true));
                     headerCell.classList.add('asc');
                     headerCell.querySelector('i').className = 'fas fa-sort-alpha-up ml-2';
@@ -182,7 +223,6 @@
                 rows.forEach(row => tbody.appendChild(row));
             });
         });
-
     });
 </script>
 {% endblock %}

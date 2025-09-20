@@ -1,5 +1,8 @@
 from django.contrib import admin
+from django.http import HttpResponse
 from .models import UserEmail, EmailTemplate, SiteSettings
+import openpyxl
+from datetime import datetime
 
 
 @admin.register(UserEmail)
@@ -7,6 +10,37 @@ class UserEmailAdmin(admin.ModelAdmin):
     list_display = ("username", "email")
     search_fields = ("username", "email")
     ordering = ("username",)
+    actions = ["export_to_excel"]
+
+    def export_to_excel(self, request, queryset):
+        """
+        Export selected UserEmail objects to an Excel file.
+        """
+        # Create a new workbook and select the active sheet
+        workbook = openpyxl.Workbook()
+        sheet = workbook.active
+        sheet.title = "User Emails"
+
+        # Define headers
+        headers = ["Username", "Email"]
+        sheet.append(headers)
+
+        # Add data from queryset
+        for user in queryset:
+            sheet.append([user.username, user.email])
+
+        # Prepare response with Excel file
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        response["Content-Disposition"] = f"attachment; filename=user_emails_{timestamp}.xlsx"
+
+        # Save workbook to response
+        workbook.save(response)
+        return response
+
+    export_to_excel.short_description = "Export selected users to Excel"
 
 
 @admin.register(EmailTemplate)
@@ -51,5 +85,3 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         Prevent multiple SiteSettings objects. Only one should exist.
         """
         return not SiteSettings.objects.exists()
-
-

@@ -10,10 +10,15 @@ from django.db import IntegrityError
 from django.http import JsonResponse
 from django.template import Template, Context
 import pandas as pd
+import smtplib
+import logging
+import traceback
 
 from .models import UserEmail, EmailTemplate, SiteSettings
 from .forms import UploadExcelForm, EmailTemplateForm, AddEmailForm, SiteSettingsForm
 
+# Configure logging
+logger = logging.getLogger(__name__)
 
 def dashboard(request):
     emails = UserEmail.objects.all()
@@ -22,7 +27,6 @@ def dashboard(request):
         'emails': emails,
         'last_upload': last_upload
     })
-
 
 def upload_excel(request):
     if request.method == 'POST':
@@ -40,7 +44,6 @@ def upload_excel(request):
     else:
         form = UploadExcelForm()
     return render(request, 'sender/upload_excel.html', {'form': form})
-
 
 class EmailListView(ListView):
     model = UserEmail
@@ -74,13 +77,11 @@ class EmailListView(ListView):
         context['page_size'] = self.request.GET.get('page_size', '10')
         return context
 
-
 def delete_email(request, pk):
     email = get_object_or_404(UserEmail, pk=pk)
     email.delete()
     messages.success(request, f"Email {email.email} deleted successfully.")
     return redirect('email_list')
-
 
 def bulk_delete(request):
     if request.method == 'POST':
@@ -95,7 +96,6 @@ def bulk_delete(request):
         messages.success(request, f"{count} emails deleted successfully.")
     return redirect('email_list')
 
-
 def add_email(request):
     if request.method == 'POST':
         form = AddEmailForm(request.POST)
@@ -109,7 +109,6 @@ def add_email(request):
     else:
         form = AddEmailForm()
     return render(request, 'sender/add_email.html', {'form': form})
-
 
 def send_emails(request):
     template = EmailTemplate.objects.first()
@@ -129,10 +128,11 @@ def send_emails(request):
         return redirect('site_settings')
 
     # Pagination setup for batching
-    paginator = Paginator(emails, 50)  # send 50 per batch
+    paginator = Paginator(emails, 50)  # Send 50 per batch
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
 
+    failed_emails = []
     for user_email in page_obj.object_list:
         context = {'username': user_email.username}
         html_content = Template(template.html_content).render(Context(context))
@@ -147,9 +147,18 @@ def send_emails(request):
         msg.attach_alternative(html_content, "text/html")
         try:
             msg.send()
+        except smtplib.SMTPException as smtp_e:
+            error_msg = f"SMTP error sending to {user_email.email}: {str(smtp_e)}"
+            logger.error(f"{error_msg}\n{traceback.format_exc()}")
+            failed_emails.append(error_msg)
         except Exception as e:
-            messages.error(request, f"Failed to send email to {user_email.email}: {str(e)}")
-            return redirect('email_list')
+            error_msg = f"Unexpected error sending to {user_email.email}: {str(e)}"
+            logger.error(f"{error_msg}\n{traceback.format_exc()}")
+            failed_emails.append(error_msg)
+
+    if failed_emails:
+        messages.error(request, f"Failed to send some emails: {'; '.join(failed_emails)}")
+        return redirect('email_list')
 
     # If there's another page, redirect to it
     if page_obj.has_next():
@@ -159,7 +168,6 @@ def send_emails(request):
 
     messages.success(request, "All emails processed successfully!")
     return redirect('email_list')
-
 
 def send_selected(request):
     if request.method == 'POST':
@@ -184,6 +192,7 @@ def send_selected(request):
             messages.warning(request, "No valid recipients selected.")
             return redirect('email_list')
 
+        failed_emails = []
         for user_email in emails:
             context = {'username': user_email.username}
             html_content = Template(template.html_content).render(Context(context))
@@ -198,13 +207,21 @@ def send_selected(request):
             msg.attach_alternative(html_content, "text/html")
             try:
                 msg.send()
+            except smtplib.SMTPException as smtp_e:
+                error_msg = f"SMTP error sending to {user_email.email}: {str(smtp_e)}"
+                logger.error(f"{error_msg}\n{traceback.format_exc()}")
+                failed_emails.append(error_msg)
             except Exception as e:
-                messages.error(request, f"Failed to send email to {user_email.email}: {str(e)}")
-                return redirect('email_list')
+                error_msg = f"Unexpected error sending to {user_email.email}: {str(e)}"
+                logger.error(f"{error_msg}\n{traceback.format_exc()}")
+                failed_emails.append(error_msg)
 
-        messages.success(request, f"Emails sent to {len(emails)} selected recipients successfully!")
+        if failed_emails:
+            messages.error(request, f"Failed to send some emails: {'; '.join(failed_emails)}")
+            return redirect('email_list')
+
+        messages.success(request, f"Emails sent to {len(emails) - len(failed_emails)} selected recipients successfully!")
     return redirect('email_list')
-
 
 def edit_template(request):
     template, created = EmailTemplate.objects.get_or_create(name="Default Template")
@@ -218,7 +235,6 @@ def edit_template(request):
         form = EmailTemplateForm(instance=template)
     return render(request, 'sender/edit_template.html', {'form': form})
 
-
 def site_settings(request):
     settings_obj, created = SiteSettings.objects.get_or_create()
     if request.method == 'POST':
@@ -230,7 +246,6 @@ def site_settings(request):
     else:
         form = SiteSettingsForm(instance=settings_obj)
     return render(request, 'sender/site_settings.html', {'form': form})
-
 
 def ajax_search(request):
     query = request.GET.get('q', '')
